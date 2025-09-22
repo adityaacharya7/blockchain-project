@@ -1,24 +1,1883 @@
-import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+import { ethers } from 'ethers';
+import Chart from 'chart.js/auto';
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+// --- Contract Details ---
+const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'; // <-- Updated Address
+const contractABI = [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "farmer",
+          "type": "address"
+        }
+      ],
+      "name": "BatchRegistered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        }
+      ],
+      "name": "OwnershipTransferred",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "batchCount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "batches",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "farmer",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "ipfsHash",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_id",
+          "type": "uint256"
+        }
+      ],
+      "name": "getBatch",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        },
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "_ipfsHash",
+          "type": "string"
+        }
+      ],
+      "name": "registerBatch",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        }
+      ],
+      "name": "transferOwnership",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ];
 
-setupCounter(document.querySelector('#counter'))
+// --- Global State ---
+let provider;
+let signer;
+let contract;
+const hardhatNetworkId = '31337';
+
+// Application Data with enhanced blockchain simulation
+const appData = {
+    landingPage: {
+      heroTitle: "Farm to Fork: Transparent Agriculture Powered by Blockchain",
+      subtitle: "Revolutionary traceability system connecting farmers, distributors, retailers, and consumers through immutable blockchain technology",
+      features: [
+        "🔗 Immutable blockchain records",
+        "📱 QR code traceability", 
+        "💰 Fair pricing with smart contracts",
+        "🛡️ Product authenticity verification",
+        "📊 Real-time analytics dashboard",
+        "🌍 Global supply chain transparency"
+      ]
+    },
+    systemStats: {
+      totalFarmers: 2847,
+      totalCrops: 18562,
+      totalDistributors: 456,
+      totalRetailers: 1203,
+      totalTransactions: 45780,
+      totalValueTraded: "₹12,45,67,890",
+      verifiedProducts: 98.7,
+      farmerIncomeUplift: 23.4
+    },
+    farmers: [
+      {
+        id: "farmer_001",
+        name: "Green Valley Organic Farms",
+        location: "Maharashtra, India",
+        contact: "contact@greenvalley.org",
+        established: "2015",
+        certification: "Organic Certified",
+        totalCrops: 45,
+        totalEarnings: "₹8,45,670",
+        pendingBids: 12,
+        qualityRating: 4.8,
+        avatar: "👨‍🌾"
+      },
+      {
+        id: "farmer_002",
+        name: "Sunset Heritage Orchards", 
+        location: "Punjab, India",
+        contact: "info@sunsetorchards.com",
+        established: "2018",
+        certification: "Fair Trade Certified",
+        totalCrops: 32,
+        totalEarnings: "₹6,78,900",
+        pendingBids: 8,
+        qualityRating: 4.9,
+        avatar: "👩‍🌾"
+      }
+    ],
+    distributors: [
+      {
+        id: "dist_001",
+        name: "AgriConnect Distribution Hub",
+        location: "Mumbai, Maharashtra", 
+        contact: "operations@agriconnect.com",
+        license: "DIST-2023-001",
+        activeBids: 15,
+        wonAuctions: 89,
+        deliveriesPending: 23,
+        penalties: 2,
+        successRate: 94.2,
+        avatar: "🚚"
+      }
+    ],
+    retailers: [
+      {
+        id: "retail_001",
+        name: "FreshMart Supermarket Chain",
+        location: "Pune, Maharashtra",
+        contact: "quality@freshmart.com", 
+        license: "RTL-2023-089",
+        batchesVerified: 156,
+        shelfLifeAlerts: 3,
+        qualityScore: 96.8,
+        customerRating: 4.7,
+        avatar: "🏬"
+      }
+    ],
+    consumers: [
+      {
+        id: "consumer_001",
+        name: "Rajesh Sharma",
+        location: "Delhi, India",
+        qrScans: 47,
+        favoriteProducts: 12,
+        trustScore: 98.5,
+        recentPurchases: 8,
+        avatar: "🛒"
+      }
+    ],
+    crops: [
+      {
+        id: "crop_001",
+        farmerId: "farmer_001",
+        type: "Organic Basmati Rice",
+        variety: "Premium Long Grain",
+        harvestDate: "2024-09-15",
+        quantity: "2000 kg",
+        qualityGrade: "Premium A+",
+        location: "Field-A, Green Valley",
+        price: "₹85/kg", 
+        status: "Available",
+        bids: [
+          {"distributorId": "dist_001", "amount": "₹83/kg", "status": "Active"},
+          {"distributorId": "dist_002", "amount": "₹84/kg", "status": "Leading"}
+        ],
+        blockchainHash: "0x1a2b3c4d5e6f7890abcdef123456",
+        ipfsHash: "QmYjK8pRo3nV2wXzM9kL7eF2",
+        qrCode: "QR_CROP_001",
+        certifications: ["Organic", "Non-GMO", "Pesticide-Free"],
+        images: ["rice-field.jpg", "harvesting.jpg", "quality-check.jpg"]
+      },
+      {
+        id: "crop_002",
+        farmerId: "farmer_002", 
+        type: "Premium Red Apples",
+        variety: "Himalayan Royal Gala",
+        harvestDate: "2024-09-12",
+        quantity: "500 kg",
+        qualityGrade: "Export Quality",
+        location: "Orchard-C, Sunset Hills",
+        price: "₹150/kg",
+        status: "Sold",
+        blockchainHash: "0x9f8e7d6c5b4a39281fed567890",
+        ipfsHash: "QmZtQ5rL8kWxY4vB6nP9mK3",
+        qrCode: "QR_CROP_002",
+        certifications: ["Fair Trade", "Sustainable", "Premium Grade"],
+        images: ["apple-orchard.jpg", "red-apples.jpg", "packing.jpg"]
+      },
+      {
+        id: "crop_003",
+        farmerId: "farmer_001",
+        type: "Organic Tomatoes",
+        variety: "Roma Heritage",
+        harvestDate: "2024-09-20",
+        quantity: "800 kg",
+        qualityGrade: "A Grade",
+        location: "Greenhouse-B, Green Valley",
+        price: "₹45/kg",
+        status: "Bidding",
+        blockchainHash: "0x7c8b9a0d1e2f3456789abcdef0",
+        ipfsHash: "QmZtQ5rL8kWxY4vB6nP9mK4",
+        qrCode: "QR_CROP_003",
+        certifications: ["Organic", "Sustainable"],
+        images: ["tomato-field.jpg", "harvest.jpg"]
+      }
+    ],
+    blockchainEvents: [
+      {
+        id: "event_001",
+        type: "BatchCreated",
+        cropId: "crop_001", 
+        txHash: "0x1a2b3c4d5e6f7890abcdef123456",
+        blockNumber: 18567891,
+        timestamp: "2024-09-15T08:30:00Z",
+        gasUsed: "0.0045 ETH",
+        status: "Confirmed",
+        icon: "📦"
+      },
+      {
+        id: "event_002",
+        type: "BidPlaced",
+        cropId: "crop_001",
+        distributorId: "dist_001", 
+        txHash: "0x9f8e7d6c5b4a39281fed567890",
+        blockNumber: 18567892,
+        timestamp: "2024-09-16T10:30:00Z",
+        gasUsed: "0.0032 ETH", 
+        status: "Confirmed",
+        icon: "🚚"
+      },
+      {
+        id: "event_003",
+        type: "DeliveryConfirmed",
+        cropId: "crop_002",
+        retailerId: "retail_001",
+        txHash: "0x7c8b9a0d1e2f3456789abcdef0", 
+        blockNumber: 18567893,
+        timestamp: "2024-09-17T14:45:00Z",
+        gasUsed: "0.0038 ETH",
+        status: "Confirmed", 
+        icon: "✅"
+      }
+    ],
+    charts: {
+      farmerEarnings: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        data: [45000, 52000, 48000, 61000, 58000, 67000]
+      },
+      cropPerformance: {
+        labels: ["Rice", "Wheat", "Apples", "Tomatoes", "Cotton"],
+        data: [85, 78, 92, 88, 75]
+      },
+      distributorSuccess: {
+        labels: ["Won", "Lost", "Pending"],
+        data: [89, 23, 15]
+      },
+      retailerVerification: {
+        labels: ["Sep 1", "Sep 8", "Sep 15", "Sep 22"], 
+        data: [34, 42, 38, 45]
+      },
+      consumerScans: {
+        labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+        data: [12, 15, 18, 22]
+      },
+      platformGrowth: {
+        labels: ["Q1", "Q2", "Q3", "Q4"],
+        data: [1200, 1850, 2400, 2847]
+      }
+    },
+    smartContracts: {
+      BatchRegistry: {
+        address: "0x742d35cc6732c0532925a3b8d4b5c87d9ed2bcaa",
+        network: "Polygon Mumbai Testnet",
+        deployCost: "0.0234 ETH",
+        interactions: 1247
+      },
+      Auction: {
+        address: "0x8ba1f109551bd432803012645hac136c34b5739c", 
+        network: "Polygon Mumbai Testnet",
+        deployCost: "0.0156 ETH",
+        interactions: 2156
+      },
+      Escrow: {
+        address: "0x2f09a57f6e6b7c38d1c7f8a9b5c4d3e2f1908576",
+        network: "Polygon Mumbai Testnet",
+        deployCost: "0.0198 ETH", 
+        interactions: 891
+      },
+      Insurance: {
+        address: "0x4e7d8c9b0a1f2e3d4c5b6a7e8f9d0c1b2a3f4e5d",
+        network: "Polygon Mumbai Testnet",
+        deployCost: "0.0167 ETH",
+        interactions: 234
+      }
+    }
+  };
+  
+  // Current application state
+  let currentState = {
+    role: 'farmer',
+    user: null,
+    activeSection: 'home',
+    charts: {}
+  };
+  
+  // Initialize application
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('AgriTrace: Initializing blockchain agricultural traceability system...');
+    initializeApp();
+  });
+  
+  function initializeApp() {
+    setupEventListeners();
+    showLandingPage();
+    startBlockchainSimulation();
+    console.log('AgriTrace: System ready');
+  }
+  
+  function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
+    // Landing page events
+    const getStartedBtn = document.getElementById('getStartedBtn');
+    const skipToDemo = document.getElementById('skipToDemo');
+    const roleCards = document.querySelectorAll('.role-card');
+    const backToLanding = document.getElementById('backToLanding');
+    const roleSwitcher = document.getElementById('roleSwitcher');
+  
+    if (getStartedBtn) {
+      getStartedBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        document.querySelector('.role-selection-section').scrollIntoView({
+          behavior: 'smooth' 
+        });
+      });
+    }
+  
+    if (skipToDemo) {
+      skipToDemo.addEventListener('click', (e) => {
+        e.preventDefault();
+        showMainApp();
+      });
+    }
+  
+    if (backToLanding) {
+      backToLanding.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLandingPage();
+      });
+    }
+  
+    if (roleSwitcher) {
+      roleSwitcher.addEventListener('change', (e) => {
+        e.preventDefault();
+        const newRole = e.target.value;
+        console.log('Role switcher changed to:', newRole);
+        switchRole(newRole);
+      });
+    }
+  
+    // Role cards click handlers
+    roleCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.preventDefault();
+        const role = card.dataset.role;
+        console.log('Role card clicked:', role);
+        currentState.role = role;
+        showMainApp();
+      });
+      
+      // Role card buttons
+      const button = card.querySelector('.btn');
+      if (button) {
+        button.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const role = card.dataset.role;
+          console.log('Role button clicked:', role);
+          currentState.role = role;
+          showMainApp();
+        });
+      }
+    });
+  
+    // Sidebar navigation
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const section = item.dataset.section;
+        switchSection(section);
+      });
+    });
+  
+    // Dashboard specific events
+    setupDashboardEvents();
+    setupModalEvents();
+    setupProvenanceEventListeners();
+    
+    console.log('Event listeners setup complete');
+  }
+  
+  function setupDashboardEvents() {
+    // Farmer events
+    const addCropBtn = document.getElementById('addCropBtn');
+    if (addCropBtn) {
+      addCropBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('Add crop button clicked');
+        showModal('addCropModal');
+      });
+    }
+  
+    // Retailer events
+    const scanQRBtn = document.getElementById('scanQRBtn');
+    if (scanQRBtn) {
+      scanQRBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        simulateQRScan();
+      });
+    }
+  
+    // Consumer events
+    const simulateScanBtn = document.getElementById('simulateScanBtn');
+    const searchProductBtn = document.getElementById('searchProductBtn');
+    const productIdInput = document.getElementById('productIdInput');
+  
+    if (simulateScanBtn) {
+      simulateScanBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        simulateQRScan();
+      });
+    }
+  
+    if (searchProductBtn) {
+      searchProductBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const productId = productIdInput.value.trim();
+        if (productId) {
+          showProductJourney(productId);
+        } else {
+          showToast('warning', 'Input Required', 'Please enter a product ID to search');
+        }
+      });
+    }
+  
+    if (productIdInput) {
+      productIdInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (searchProductBtn) {
+            searchProductBtn.click();
+          }
+        }
+      });
+    }
+  }
+  
+  function setupModalEvents() {
+    // Modal close events
+    const modals = document.querySelectorAll('.modal');
+    const modalCloses = document.querySelectorAll('.modal-close');
+  
+    modalCloses.forEach(close => {
+      close.addEventListener('click', (e) => {
+        e.preventDefault();
+        const modal = e.target.closest('.modal');
+        if (modal) {
+          hideModal(modal.id);
+        }
+      });
+    });
+  
+    modals.forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          hideModal(modal.id);
+        }
+      });
+    });
+  
+    // Form submissions
+    const addCropForm = document.getElementById('addCropForm');
+    const bidForm = document.getElementById('bidForm');
+  
+    if (addCropForm) {
+      addCropForm.addEventListener('submit', handleAddCrop);
+    }
+  
+    if (bidForm) {
+      bidForm.addEventListener('submit', handlePlaceBid);
+    }
+  
+    // Cancel buttons
+    const cancelCrop = document.getElementById('cancelCrop');
+    const cancelBid = document.getElementById('cancelBid');
+  
+    if (cancelCrop) {
+      cancelCrop.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideModal('addCropModal');
+      });
+    }
+  
+    if (cancelBid) {
+      cancelBid.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideModal('bidModal');
+      });
+    }
+  
+    // Bid calculation
+    const bidAmount = document.getElementById('bidAmount');
+    const bidQuantity = document.getElementById('bidQuantity');
+  
+    if (bidAmount) bidAmount.addEventListener('input', updateBidTotal);
+    if (bidQuantity) bidQuantity.addEventListener('input', updateBidTotal);
+  }
+  
+  function showLandingPage() {
+    console.log('Showing landing page');
+    const landingPage = document.getElementById('landingPage');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (landingPage) landingPage.classList.remove('hidden');
+    if (mainApp) mainApp.classList.add('hidden');
+    
+    // Animate blockchain blocks
+    const blocks = document.querySelectorAll('.blockchain-blocks .block');
+    blocks.forEach((block, index) => {
+      block.style.setProperty('--i', index);
+    });
+  }
+  
+  function showMainApp() {
+    console.log('Showing main app for role:', currentState.role);
+    const landingPage = document.getElementById('landingPage');
+    const mainApp = document.getElementById('mainApp');
+    
+    if (landingPage) landingPage.classList.add('hidden');
+    if (mainApp) mainApp.classList.remove('hidden');
+    
+    // Initialize role
+    const roleSwitcher = document.getElementById('roleSwitcher');
+    if (roleSwitcher) {
+      roleSwitcher.value = currentState.role;
+      console.log('Set role switcher to:', currentState.role);
+    }
+    
+    switchRole(currentState.role);
+    switchSection('home');
+  }
+  
+  function switchRole(role) {
+    console.log(`AgriTrace: Switching to ${role} role`);
+    currentState.role = role;
+    
+    // Update UI
+    const userRole = document.getElementById('userRole');
+    const userName = document.getElementById('userName');
+    
+    if (userRole && userName) {
+      const roleData = getRoleData(role);
+      userRole.textContent = roleData.displayName;
+      userName.textContent = roleData.userName;
+      console.log('Updated user info:', roleData);
+    }
+  
+    // Show appropriate dashboard
+    showDashboard(role);
+    
+    showToast('info', 'Role Switched', `Welcome to ${getRoleData(role).displayName} dashboard`);
+  }
+  
+  function getRoleData(role) {
+    const roles = {
+      farmer: { displayName: '👨‍🌾 Farmer', userName: 'Green Valley Organic Farms' },
+      distributor: { displayName: '🚚 Distributor', userName: 'AgriConnect Distribution Hub' },
+      retailer: { displayName: '🏬 Retailer', userName: 'FreshMart Supermarket Chain' },
+      consumer: { displayName: '🛒 Consumer', userName: 'Rajesh Sharma' },
+      admin: { displayName: '⚙️ Admin', userName: 'System Administrator' },
+      provenance: { displayName: '🔧 Provenance', userName: 'dApp User' }
+    };
+    return roles[role] || roles.farmer;
+  }
+  
+  function switchSection(section) {
+    console.log('Switching to section:', section);
+    
+    // Update active menu item
+    const menuItems = document.querySelectorAll('.menu-item');
+    menuItems.forEach(item => {
+      if (item.dataset.section === section) {
+        item.classList.add('active');
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  
+    currentState.activeSection = section;
+
+    if (section === 'provenance') {
+        showDashboard('provenance');
+    } else {
+        showDashboard(currentState.role);
+    }
+    
+    showToast('info', 'Navigation', `Switched to ${section.charAt(0).toUpperCase() + section.slice(1)} section`);
+  }
+  
+  function showDashboard(role) {
+    console.log('Showing dashboard for role:', role);
+    
+    // Hide all dashboards
+    const dashboards = document.querySelectorAll('.dashboard');
+    dashboards.forEach(dashboard => dashboard.classList.add('hidden'));
+    
+    // Show selected dashboard
+    const dashboard = document.getElementById(`${role}Dashboard`);
+    if (dashboard) {
+      dashboard.classList.remove('hidden');
+      console.log('Dashboard shown:', `${role}Dashboard`);
+      
+      // Destroy existing charts before loading new ones
+      destroyExistingCharts();
+      
+      // Load dashboard data
+      loadDashboardData(role);
+    } else {
+      console.error('Dashboard not found:', `${role}Dashboard`);
+    }
+  }
+  
+  function loadDashboardData(role) {
+    console.log('Loading data for role:', role);
+    
+    switch(role) {
+      case 'farmer':
+        loadFarmerDashboard();
+        break;
+      case 'distributor':
+        loadDistributorDashboard();
+        break;
+      case 'retailer':
+        loadRetailerDashboard();
+        break;
+      case 'consumer':
+        loadConsumerDashboard();
+        break;
+      case 'admin':
+        loadAdminDashboard();
+        break;
+      case 'provenance':
+        loadProvenanceDashboard();
+        break;
+    }
+  }
+  
+  function loadFarmerDashboard() {
+    console.log('Loading farmer dashboard with enhanced features...');
+    
+    // Load farmer activity
+    const farmerActivity = document.getElementById('farmerActivity');
+    if (farmerActivity) {
+      const activities = [
+        { icon: '🌾', title: 'New crop registered', desc: 'Organic Tomatoes - 800kg', time: '2 hours ago' },
+        { icon: '💰', title: 'Payment received', desc: '₹1,20,000 from AgriConnect', time: '1 day ago' },
+        { icon: '📋', title: 'New bid received', desc: '₹84/kg for Basmati Rice', time: '3 hours ago' },
+        { icon: '🚚', title: 'Delivery confirmed', desc: 'Premium Apples delivered', time: '2 days ago' }
+      ];
+  
+      farmerActivity.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+          <div class="activity-icon">${activity.icon}</div>
+          <div class="activity-content">
+            <div class="activity-title">${activity.title}</div>
+            <div class="activity-desc">${activity.desc}</div>
+            <div class="activity-time">${activity.time}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+  
+    // Load farmer crops
+    loadFarmerCrops();
+    
+    // Load earnings chart with delay to ensure canvas is ready
+    setTimeout(() => {
+      loadFarmerChart();
+    }, 100);
+  }
+  
+  function loadFarmerCrops() {
+    const farmerCrops = document.getElementById('farmerCrops');
+    if (!farmerCrops) return;
+  
+    const crops = appData.crops.filter(crop => crop.farmerId === 'farmer_001');
+    
+    farmerCrops.innerHTML = crops.map(crop => `
+      <div class="crop-card">
+        <div class="crop-card-header">
+          <h4>${crop.type}</h4>
+          <div class="crop-variety">${crop.variety}</div>
+        </div>
+        <div class="crop-card-body">
+          <div class="crop-details">
+            <div class="crop-detail">
+              <strong>Harvest Date:</strong>
+              <span>${formatDate(crop.harvestDate)}</span>
+            </div>
+            <div class="crop-detail">
+              <strong>Quantity:</strong>
+              <span>${crop.quantity}</span>
+            </div>
+            <div class="crop-detail">
+              <strong>Grade:</strong>
+              <span>${crop.qualityGrade}</span>
+            </div>
+            <div class="crop-detail">
+              <strong>Price:</strong>
+              <span>${crop.price}</span>
+            </div>
+            <div class="crop-detail">
+              <strong>Location:</strong>
+              <span>${crop.location}</span>
+            </div>
+          </div>
+        </div>
+        <div class="crop-card-footer">
+          <span class="status status--${crop.status.toLowerCase()}">${crop.status}</span>
+          <button class="btn btn--sm btn--outline" onclick="viewQRCode('${crop.id}')">
+            <i class="fas fa-qrcode"></i> QR Code
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function loadFarmerChart() {
+    const ctx = document.getElementById('farmerEarningsChart');
+    if (!ctx || currentState.charts.farmerEarnings) return;
+  
+    try {
+      currentState.charts.farmerEarnings = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: appData.charts.farmerEarnings.labels,
+          datasets: [{
+            label: 'Monthly Earnings (₹)',
+            data: appData.charts.farmerEarnings.data,
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return '₹' + (value/1000) + 'k';
+                }
+              }
+            }
+          }
+        }
+      });
+      console.log('Farmer earnings chart loaded successfully');
+    } catch (error) {
+      console.error('Error loading farmer chart:', error);
+    }
+  }
+  
+  function loadDistributorDashboard() {
+    console.log('Loading distributor dashboard with bidding features...');
+    
+    // Load available crops preview
+    const distributorCropsPreview = document.getElementById('distributorCropsPreview');
+    if (distributorCropsPreview) {
+      const availableCrops = appData.crops.filter(crop => crop.status !== 'Sold').slice(0, 3);
+      
+      distributorCropsPreview.innerHTML = availableCrops.map(crop => `
+        <div class="crop-preview-item">
+          <div>
+            <strong>${crop.type}</strong>
+            <div style="font-size: 12px; color: var(--color-text-secondary);">${crop.quantity} at ${crop.price}</div>
+          </div>
+          <button class="btn btn--sm btn--primary" onclick="showBidModal('${crop.id}')">
+            <i class="fas fa-gavel"></i> Bid
+          </button>
+        </div>
+      `).join('');
+    }
+    
+    // Load success rate chart
+    setTimeout(() => {
+      loadDistributorChart();
+    }, 100);
+  }
+  
+  function loadDistributorChart() {
+    const ctx = document.getElementById('distributorSuccessChart');
+    if (!ctx || currentState.charts.distributorSuccess) return;
+  
+    try {
+      currentState.charts.distributorSuccess = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: appData.charts.distributorSuccess.labels,
+          datasets: [{
+            data: appData.charts.distributorSuccess.data,
+            backgroundColor: ['#1FB8CD', '#FFC185', '#B4413C']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            }
+          }
+        }
+      });
+      console.log('Distributor success chart loaded successfully');
+    } catch (error) {
+      console.error('Error loading distributor chart:', error);
+    }
+  }
+  
+  function loadRetailerDashboard() {
+    console.log('Loading retailer dashboard with verification system...');
+    
+    // Load inventory alerts
+    const retailerAlerts = document.getElementById('retailerAlerts');
+    if (retailerAlerts) {
+      const alerts = [
+        { type: 'warning', title: 'Shelf Life Alert', desc: 'Organic Tomatoes expire in 2 days', time: '1 hour ago' },
+        { type: 'info', title: 'New Delivery', desc: 'Premium Apples received', time: '3 hours ago' },
+        { type: 'success', title: 'Quality Check', desc: 'Basmati Rice verified authentic', time: '5 hours ago' }
+      ];
+  
+      retailerAlerts.innerHTML = alerts.map(alert => `
+        <div class="alert-item">
+          <div class="alert-icon ${alert.type}">
+            ${alert.type === 'warning' ? '⚠️' : alert.type === 'info' ? 'ℹ️' : '✅'}
+          </div>
+          <div class="alert-content">
+            <div class="alert-title">${alert.title}</div>
+            <div class="alert-desc">${alert.desc}</div>
+            <div class="alert-time">${alert.time}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Load verification chart
+    setTimeout(() => {
+      loadRetailerChart();
+    }, 100);
+  }
+  
+  function loadRetailerChart() {
+    const ctx = document.getElementById('retailerVerificationChart');
+    if (!ctx || currentState.charts.retailerVerification) return;
+  
+    try {
+      currentState.charts.retailerVerification = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: appData.charts.retailerVerification.labels,
+          datasets: [{
+            label: 'Products Verified',
+            data: appData.charts.retailerVerification.data,
+            backgroundColor: '#F59E0B'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+      console.log('Retailer verification chart loaded successfully');
+    } catch (error) {
+      console.error('Error loading retailer chart:', error);
+    }
+  }
+  
+  function loadConsumerDashboard() {
+    console.log('Loading consumer dashboard with product verification...');
+    // Consumer dashboard is primarily interactive, no heavy data loading needed
+  }
+  
+  function loadAdminDashboard() {
+    console.log('Loading admin dashboard with system analytics...');
+    
+    // Load blockchain events
+    loadBlockchainEvents();
+    
+    // Load smart contracts
+    loadSmartContracts();
+    
+    // Load platform growth chart
+    setTimeout(() => {
+      loadAdminChart();
+    }, 100);
+  }
+  
+  function loadBlockchainEvents() {
+    const blockchainEvents = document.getElementById('blockchainEvents');
+    if (!blockchainEvents) return;
+  
+    blockchainEvents.innerHTML = appData.blockchainEvents.map(event => `
+      <div class="event-item">
+        <div class="event-icon">${event.icon}</div>
+        <div class="event-content">
+          <div class="event-type">${event.type}</div>
+          <div class="event-details">
+            Block: ${event.blockNumber} | Gas: ${event.gasUsed}
+          </div>
+          <div class="event-time">${formatDate(event.timestamp)}</div>
+        </div>
+        <span class="status status--success">${event.status}</span>
+      </div>
+    `).join('');
+  }
+  
+  function loadSmartContracts() {
+    const smartContracts = document.getElementById('smartContracts');
+    if (!smartContracts) return;
+  
+    smartContracts.innerHTML = Object.entries(appData.smartContracts).map(([name, contract]) => `
+      <div class="contract-card">
+        <div class="contract-header">
+          <div class="contract-name">${name}</div>
+          <span class="status status--success">Active</span>
+        </div>
+        <div class="contract-address">${contract.address}</div>
+        <div class="contract-stats">
+          <div>Network: ${contract.network}</div>
+          <div>Deploy Cost: ${contract.deployCost}</div>
+          <div>Interactions: ${contract.interactions.toLocaleString()}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  function loadAdminChart() {
+    const ctx = document.getElementById('platformGrowthChart');
+    if (!ctx || currentState.charts.platformGrowth) return;
+  
+    try {
+      currentState.charts.platformGrowth = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: appData.charts.platformGrowth.labels,
+          datasets: [{
+            label: 'Active Users',
+            data: appData.charts.platformGrowth.data,
+            backgroundColor: '#0D9488'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+      console.log('Platform growth chart loaded successfully');
+    } catch (error) {
+      console.error('Error loading admin chart:', error);
+    }
+  }
+  
+  // Destroy existing charts to prevent canvas reuse errors
+  function destroyExistingCharts() {
+    Object.values(currentState.charts).forEach(chart => {
+      if (chart && typeof chart.destroy === 'function') {
+        try {
+          chart.destroy();
+        } catch (error) {
+          console.warn('Error destroying chart:', error);
+        }
+      }
+    });
+    currentState.charts = {};
+  }
+  
+  // Modal Functions
+  function showModal(modalId) {
+    console.log('Showing modal:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    } else {
+      console.error('Modal not found:', modalId);
+    }
+  }
+  
+  function hideModal(modalId) {
+    console.log('Hiding modal:', modalId);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
+    }
+  }
+  
+  function showBidModal(cropId) {
+    console.log('Showing bid modal for crop:', cropId);
+    const crop = appData.crops.find(c => c.id === cropId);
+    if (!crop) {
+      console.error('Crop not found:', cropId);
+      return;
+    }
+  
+    const farmer = appData.farmers.find(f => f.id === crop.farmerId);
+    const bidCropInfo = document.getElementById('bidCropInfo');
+    
+    if (bidCropInfo) {
+      bidCropInfo.innerHTML = `
+        <h3>${crop.type} - ${crop.variety}</h3>
+        <div class="crop-info-grid">
+          <div class="crop-info-item">
+            <strong>Farmer:</strong>
+            <span>${farmer ? farmer.name : 'Unknown'}</span>
+          </div>
+          <div class="crop-info-item">
+            <strong>Location:</strong>
+            <span>${farmer ? farmer.location : 'Unknown'}</span>
+          </div>
+          <div class="crop-info-item">
+            <strong>Quantity:</strong>
+            <span>${crop.quantity}</span>
+          </div>
+          <div class="crop-info-item">
+            <strong>Grade:</strong>
+            <span>${crop.qualityGrade}</span>
+          </div>
+          <div class="crop-info-item">
+            <strong>Current Price:</strong>
+            <span>${crop.price}</span>
+          </div>
+        </div>
+      `;
+    }
+    
+    const bidModal = document.getElementById('bidModal');
+    if (bidModal) {
+      bidModal.dataset.cropId = cropId;
+      showModal('bidModal');
+    }
+  }
+  
+  // Form Handlers
+  function handleAddCrop(e) {
+    e.preventDefault();
+    console.log('Handling add crop form submission');
+    
+    const formData = {
+      type: document.getElementById('cropType').value,
+      variety: document.getElementById('cropVariety').value,
+      harvestDate: document.getElementById('harvestDate').value,
+      quantity: document.getElementById('cropQuantity').value,
+      qualityGrade: document.getElementById('qualityGrade').value,
+      price: document.getElementById('cropPrice').value,
+      location: document.getElementById('cropLocation').value
+    };
+    
+    // Validate required fields
+    if (!formData.type || !formData.variety || !formData.harvestDate || !formData.quantity || !formData.price || !formData.location) {
+      showToast('error', 'Validation Error', 'Please fill in all required fields');
+      return;
+    }
+    
+    // Simulate blockchain transaction
+    const newCrop = {
+      id: `crop_${Date.now()}`,
+      farmerId: 'farmer_001',
+      type: formData.type,
+      variety: formData.variety,
+      harvestDate: formData.harvestDate,
+      quantity: `${formData.quantity} kg`,
+      qualityGrade: formData.qualityGrade,
+      location: formData.location,
+      price: `₹${formData.price}/kg`,
+      status: 'Available',
+      blockchainHash: generateHash(),
+      ipfsHash: generateIPFSHash(),
+      qrCode: `QR_${Date.now()}`,
+      certifications: ['Organic', 'Verified']
+    };
+    
+    // Add to data
+    appData.crops.push(newCrop);
+    
+    // Create blockchain event
+    const event = createBlockchainEvent('BatchCreated', newCrop.id);
+    appData.blockchainEvents.unshift(event);
+    
+    // Update UI
+    hideModal('addCropModal');
+    document.getElementById('addCropForm').reset();
+    loadFarmerCrops();
+    
+    showToast('success', 'Crop Registered', `${formData.type} successfully registered on blockchain!`);
+    
+    // Simulate blockchain confirmation
+    setTimeout(() => {
+      showToast('info', 'Blockchain Confirmed', `Transaction ${event.txHash.substring(0, 10)}... confirmed in block ${event.blockNumber}`);
+    }, 3000);
+  }
+  
+  function handlePlaceBid(e) {
+    e.preventDefault();
+    console.log('Handling place bid form submission');
+    
+    const bidModal = document.getElementById('bidModal');
+    const cropId = bidModal ? bidModal.dataset.cropId : null;
+    
+    if (!cropId) {
+      showToast('error', 'Error', 'No crop selected for bidding');
+      return;
+    }
+    
+    const bidData = {
+      amount: document.getElementById('bidAmount').value,
+      quantity: document.getElementById('bidQuantity').value,
+      deliveryTerms: document.getElementById('deliveryTerms').value
+    };
+    
+    // Validate required fields
+    if (!bidData.amount || !bidData.quantity) {
+      showToast('error', 'Validation Error', 'Please fill in bid amount and quantity');
+      return;
+    }
+    
+    // Create blockchain event
+    const event = createBlockchainEvent('BidPlaced', cropId);
+    appData.blockchainEvents.unshift(event);
+    
+    // Update crop status
+    const crop = appData.crops.find(c => c.id === cropId);
+    if (crop) {
+      crop.status = 'Bidding';
+    }
+    
+    // Update UI
+    hideModal('bidModal');
+    document.getElementById('bidForm').reset();
+    
+    showToast('success', 'Bid Placed', `Your bid of ₹${bidData.amount}/kg has been placed successfully!`);
+    
+    // Simulate blockchain confirmation
+    setTimeout(() => {
+      showToast('info', 'Smart Contract', `Escrow created for ₹${(bidData.amount * bidData.quantity).toLocaleString()}`);
+    }, 2000);
+  }
+  
+  function updateBidTotal() {
+    const amount = parseFloat(document.getElementById('bidAmount').value) || 0;
+    const quantity = parseFloat(document.getElementById('bidQuantity').value) || 0;
+    const total = amount * quantity;
+    
+    const totalElement = document.getElementById('totalBidValue');
+    if (totalElement) {
+      totalElement.textContent = `₹${total.toLocaleString()}`;
+    }
+  }
+  
+  // QR and Product Journey
+  function simulateQRScan() {
+    const randomCrop = appData.crops[Math.floor(Math.random() * appData.crops.length)];
+    showToast('info', 'QR Scanned', `Scanning product ${randomCrop.id}...`);
+    
+    setTimeout(() => {
+      showProductJourney(randomCrop.id);
+      showToast('success', 'Product Verified', `${randomCrop.type} verified as authentic!`);
+    }, 1500);
+  }
+  
+  function showProductJourney(cropId) {
+    console.log('Showing product journey for:', cropId);
+    const crop = appData.crops.find(c => c.id === cropId);
+    if (!crop) {
+      showToast('error', 'Product Not Found', 'The specified product could not be found in our system');
+      return;
+    }
+  
+    const farmer = appData.farmers.find(f => f.id === crop.farmerId);
+    const productJourney = document.getElementById('productJourney');
+    
+    if (productJourney) {
+      productJourney.innerHTML = `
+        <div class="journey-header">
+          <h2><i class="fas fa-route"></i> Product Journey</h2>
+          <p>${crop.type} - ${crop.variety}</p>
+          <div style="margin-top: 12px;">
+            <span class="status status--${crop.status.toLowerCase()}">${crop.status}</span>
+          </div>
+        </div>
+        
+        <div class="journey-stages">
+          <div class="journey-stage">
+            <div class="stage-icon" style="background: #10B981;">
+              <i class="fas fa-seedling"></i>
+            </div>
+            <h4>Farm</h4>
+            <p>Origin Verified</p>
+          </div>
+          <div class="journey-stage">
+            <div class="stage-icon" style="background: #3B82F6;">
+              <i class="fas fa-truck"></i>
+            </div>
+            <h4>Distribution</h4>
+            <p>In Transit</p>
+          </div>
+          <div class="journey-stage">
+            <div class="stage-icon" style="background: #F59E0B;">
+              <i class="fas fa-store"></i>
+            </div>
+            <h4>Retail</h4>
+            <p>Quality Verified</p>
+          </div>
+          <div class="journey-stage">
+            <div class="stage-icon" style="background: #8B5CF6;">
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <h4>Consumer</h4>
+            <p>Ready for Purchase</p>
+          </div>
+        </div>
+        
+        <div class="journey-details">
+          <div class="detail-card">
+            <h4><i class="fas fa-tractor"></i> Farm Details</h4>
+            <p><strong>Farmer:</strong> ${farmer ? farmer.name : 'Unknown'}</p>
+            <p><strong>Location:</strong> ${farmer ? farmer.location : 'Unknown'}</p>
+            <p><strong>Certification:</strong> ${farmer ? farmer.certification : 'Unknown'}</p>
+            <p><strong>Established:</strong> ${farmer ? farmer.established : 'Unknown'}</p>
+          </div>
+          
+          <div class="detail-card">
+            <h4><i class="fas fa-leaf"></i> Product Details</h4>
+            <p><strong>Type:</strong> ${crop.type}</p>
+            <p><strong>Variety:</strong> ${crop.variety}</p>
+            <p><strong>Harvest Date:</strong> ${formatDate(crop.harvestDate)}</p>
+            <p><strong>Quality Grade:</strong> ${crop.qualityGrade}</p>
+            <p><strong>Quantity:</strong> ${crop.quantity}</p>
+          </div>
+          
+          <div class="detail-card">
+            <h4><i class="fas fa-link"></i> Blockchain Verification</h4>
+            <p><strong>Product ID:</strong> ${crop.id}</p>
+            <p><strong>Blockchain Hash:</strong></p>
+            <code style="font-size: 10px; word-break: break-all;">${crop.blockchainHash}</code>
+            <p><strong>IPFS Hash:</strong> ${crop.ipfsHash}</p>
+            <p><strong>Certifications:</strong> ${crop.certifications ? crop.certifications.join(', ') : 'N/A'}</p>
+          </div>
+          
+          <div class="detail-card">
+            <h4><i class="fas fa-history"></i> Transaction History</h4>
+            ${appData.blockchainEvents
+              .filter(event => event.cropId === cropId)
+              .map(event => `
+                <div style="margin-bottom: 12px; padding: 8px; background: var(--color-bg-3); border-radius: 6px;">
+                  <p style="margin: 0;"><strong>${event.type}</strong> ${event.icon}</p>
+                  <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">
+                    ${formatDate(event.timestamp)} | Block: ${event.blockNumber}
+                  </p>
+                  <code style="font-size: 10px;">${event.txHash}</code>
+                </div>
+              `).join('')}
+          </div>
+        </div>
+      `;
+      
+      productJourney.classList.remove('hidden');
+      console.log('Product journey displayed for crop:', cropId);
+    }
+  }
+  
+  function viewQRCode(cropId) {
+    const crop = appData.crops.find(c => c.id === cropId);
+    if (crop) {
+      showToast('info', 'QR Code Generated', `QR code for ${crop.type} can be shared with distributors and retailers`);
+      console.log('QR Code viewed for crop:', cropId);
+      // In a real app, this would generate and display an actual QR code
+    }
+  }
+  
+  // Toast Notifications
+  function showToast(type, title, message, duration = 5000) {
+    const toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) return;
+  
+    const toastId = `toast_${Date.now()}`;
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.id = toastId;
+    
+    const icons = {
+      success: '✅',
+      error: '❌', 
+      warning: '⚠️',
+      info: 'ℹ️'
+    };
+  
+    toast.innerHTML = `
+      <div class="toast-header">
+        <div class="toast-icon">${icons[type] || 'ℹ️'}</div>
+        <div class="toast-title">${title}</div>
+        <button class="toast-close" onclick="hideToast('${toastId}')">&times;</button>
+      </div>
+      <div class="toast-message">${message}</div>
+    `;
+  
+    toastContainer.appendChild(toast);
+  
+    // Auto-hide after duration
+    setTimeout(() => hideToast(toastId), duration);
+  }
+  
+  function hideToast(toastId) {
+    const toast = document.getElementById(toastId);
+    if (toast) {
+      toast.style.animation = 'slideOut 0.3s ease-in-out forwards';
+      setTimeout(() => toast.remove(), 300);
+    }
+  }
+  
+  // Blockchain Simulation
+  function startBlockchainSimulation() {
+    // Simulate real-time blockchain events
+    setInterval(() => {
+      if (Math.random() > 0.7) { // 30% chance every interval
+        simulateBlockchainEvent();
+      }
+    }, 8000);
+  }
+  
+  function simulateBlockchainEvent() {
+    const eventTypes = ['BatchCreated', 'BidPlaced', 'DeliveryConfirmed', 'PaymentReleased', 'QualityVerified'];
+    const eventType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    const randomCrop = appData.crops[Math.floor(Math.random() * appData.crops.length)];
+    
+    const event = createBlockchainEvent(eventType, randomCrop.id);
+    appData.blockchainEvents.unshift(event);
+    
+    // Keep only last 20 events
+    if (appData.blockchainEvents.length > 20) {
+      appData.blockchainEvents = appData.blockchainEvents.slice(0, 20);
+    }
+    
+    // Update blockchain explorer if visible
+    if (currentState.role === 'admin') {
+      loadBlockchainEvents();
+    }
+    
+    // Show notification for important events
+    if (['BidPlaced', 'DeliveryConfirmed', 'PaymentReleased'].includes(eventType)) {
+      const messages = {
+        'BidPlaced': 'New bid placed on marketplace',
+        'DeliveryConfirmed': 'Product delivery confirmed',
+        'PaymentReleased': 'Smart contract payment released'
+      };
+      
+      showToast('info', 'Blockchain Event', messages[eventType] || 'New blockchain transaction confirmed');
+    }
+  }
+  
+  function createBlockchainEvent(type, cropId) {
+    const icons = {
+      'BatchCreated': '📦',
+      'BidPlaced': '🚚',
+      'DeliveryConfirmed': '✅',
+      'PaymentReleased': '💰',
+      'QualityVerified': '🛡️'
+    };
+  
+    return {
+      id: `event_${Date.now()}`,
+      type: type,
+      cropId: cropId,
+      txHash: generateTransactionHash(),
+      blockNumber: Math.floor(Math.random() * 1000000) + 18567000,
+      timestamp: new Date().toISOString(),
+      gasUsed: (Math.random() * 0.01 + 0.001).toFixed(4) + ' ETH',
+      status: 'Confirmed',
+      icon: icons[type] || '🔗'
+    };
+  }
+  
+  // Utility Functions
+  function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+  
+  function generateHash() {
+    return '0x' + Array.from({ length: 32 }, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+  }
+  
+  function generateIPFSHash() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = 'Qm';
+    for (let i = 0; i < 44; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+  
+  function generateTransactionHash() {
+    return '0x' + Array.from({ length: 64 }, () => 
+      Math.floor(Math.random() * 16).toString(16)
+    ).join('');
+  }
+  
+  // --- Provenance dApp Functions ---
+  
+  function setupProvenanceEventListeners() {
+      const connectButton = document.getElementById('connectButton');
+      const registerBatchButton = document.getElementById('registerBatchButton');
+      const getBatchButton = document.getElementById('getBatchButton');
+      const transferButton = document.getElementById('transferButton');
+      const getBatchCountButton = document.getElementById('getBatchCountButton');
+      const testDbButton = document.getElementById('testDbButton');
+      const createUserForm = document.getElementById('createUserForm');
+      const refreshUsersButton = document.getElementById('refreshUsersButton');
+  
+      if(connectButton) connectButton.addEventListener('click', connectWallet);
+      if(registerBatchButton) registerBatchButton.addEventListener('click', registerBatch);
+      if(getBatchButton) getBatchButton.addEventListener('click', getBatch);
+      if(transferButton) transferButton.addEventListener('click', transferOwnership);
+      if(getBatchCountButton) getBatchCountButton.addEventListener('click', getBatchCount);
+      if(testDbButton) testDbButton.addEventListener('click', testDbConnection);
+      if(createUserForm) createUserForm.addEventListener('submit', createUser);
+      if(refreshUsersButton) refreshUsersButton.addEventListener('click', fetchUsers);
+  }
+  
+  function loadProvenanceDashboard() {
+      console.log("Loading provenance dashboard");
+      fetchUsers();
+  }
+  
+  async function connectWallet() {
+      if (typeof window.ethereum === 'undefined') {
+          alert('MetaMask is not installed!');
+          return;
+      }
+  
+      try {
+          // Request account access
+          await window.ethereum.request({ method: 'eth_requestAccounts' });
+  
+          // Check the network
+          const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+          if (parseInt(chainId, 16).toString() !== hardhatNetworkId) {
+              try {
+                  // Try to switch to the Hardhat network
+                  await window.ethereum.request({
+                      method: 'wallet_switchEthereumChain',
+                      params: [{ chainId: `0x${parseInt(hardhatNetworkId, 10).toString(16)}` }],
+                  });
+              } catch (switchError) {
+                  // This error code indicates that the chain has not been added to MetaMask.
+                  if (switchError.code === 4902) {
+                      try {
+                          await window.ethereum.request({
+                              method: 'wallet_addEthereumChain',
+                              params: [
+                                  {
+                                      chainId: `0x${parseInt(hardhatNetworkId, 10).toString(16)}`,
+                                      chainName: 'Hardhat Localhost',
+                                      rpcUrls: ['http://127.0.0.1:8545'],
+                                      nativeCurrency: {
+                                          name: 'Ethereum',
+                                          symbol: 'ETH',
+                                          decimals: 18,
+                                      },
+                                  },
+                              ],
+                          });
+                      } catch (addError) {
+                          console.error('Failed to add the Hardhat network:', addError);
+                          alert('Failed to add the Hardhat network. Please add it manually.');
+                          return;
+                      }
+                  } else {
+                      console.error('Failed to switch to the Hardhat network:', switchError);
+                      alert('Failed to switch to the Hardhat network.');
+                      return;
+                  }
+              }
+          }
+  
+  
+          // Set up provider and signer
+          provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          contract = new ethers.Contract(contractAddress, contractABI, signer);
+          window.contract = contract; // Expose contract globally for debugging
+  
+          const address = await signer.getAddress();
+          
+          // Update UI
+          const statusEl = document.getElementById('status');
+          const accountEl = document.getElementById('account');
+          const connectButton = document.getElementById('connectButton');
+          if(statusEl) statusEl.textContent = 'Connected';
+          if(accountEl) accountEl.textContent = address;
+          if(connectButton) {
+              connectButton.textContent = 'Wallet Connected';
+              connectButton.disabled = true;
+          }
+  
+          console.log('Wallet connected:', address);
+          console.log('Contract instance:', contract); // New line for debugging
+      } catch (error) {
+          console.error('Failed to connect wallet:', error);
+          alert('Failed to connect wallet.');
+      }
+  }
+  
+  async function registerBatch() {
+      if (!contract) {
+          alert('Please connect your wallet first.');
+          return;
+      }
+  
+      const ipfsHash = document.getElementById('ipfsHash').value;
+      if (!ipfsHash) {
+          alert('Please enter an IPFS hash.');
+          return;
+      }
+  
+      try {
+          const tx = await contract.registerBatch(ipfsHash);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Transaction sent: ${tx.hash}...\nWaiting for confirmation...`;
+          await tx.wait();
+          if(batchDetailsEl) batchDetailsEl.textContent = `Batch registered successfully!\nTransaction hash: ${tx.hash}`;
+          document.getElementById('ipfsHash').value = ''; // Clear input
+      } catch (error) {
+          console.error('Error registering batch:', error);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Error: ${error.message}`;
+      }
+  }
+  
+  async function getBatch() {
+      if (!contract) {
+          alert('Please connect your wallet first.');
+          return;
+      }
+  
+      const batchId = document.getElementById('batchId').value;
+      if (!batchId) {
+          alert('Please enter a Batch ID.');
+          return;
+      }
+  
+      try {
+          const result = await contract.getBatch(batchId);
+          const [id, farmer, ipfsHash, owners, timestamps] = result;
+  
+          const formattedOwners = owners.join('\n  ');
+          const formattedTimestamps = timestamps.map(ts => new Date(Number(ts) * 1000).toLocaleString()).join('\n  ');
+          
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = 
+  `Batch Details (ID: ${id}):\n` +
+  `---------------------------\n` +
+  `Farmer: ${farmer}\n` +
+  `IPFS Hash: ${ipfsHash}\n\n` +
+  `Ownership History:\n  ${formattedOwners}\n\n` +
+  `Timestamps:\n  ${formattedTimestamps}`;
+  
+      } catch (error) {
+          console.error('Error fetching batch:', error);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Error: ${error.message}`;
+      }
+  }
+  
+  async function transferOwnership() {
+      if (!contract) {
+          alert('Please connect your wallet first.');
+          return;
+      }
+  
+      const batchId = document.getElementById('transferBatchId').value;
+      const toAddress = document.getElementById('toAddress').value;
+  
+      if (!batchId || !toAddress) {
+          alert('Please enter both Batch ID and a valid address.');
+          return;
+      }
+  
+      if (!ethers.isAddress(toAddress)) {
+          alert('Invalid Ethereum address.');
+          return;
+      }
+  
+      try {
+          const tx = await contract.transferOwnership(batchId, toAddress);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Transfer transaction sent: ${tx.hash}...\nWaiting for confirmation...`;
+          await tx.wait();
+          if(batchDetailsEl) batchDetailsEl.textContent = `Ownership transferred successfully for batch ${batchId} to ${toAddress}`;
+          document.getElementById('transferBatchId').value = '';
+          document.getElementById('toAddress').value = '';
+      } catch (error) {
+          console.error('Error transferring ownership:', error);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Error: ${error.message}`;
+      }
+  }
+  
+  
+  // --- Functions -- -
+  
+  // New function to get batch count
+  async function getBatchCount() {
+      if (!contract) {
+          alert('Please connect your wallet first.');
+          return;
+      }
+      try {
+          const count = await contract.batchCount();
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Total Batches: ${count.toString()}`;
+      } catch (error) {
+          console.error('Error fetching batch count:', error);
+          const batchDetailsEl = document.getElementById('batchDetails');
+          if(batchDetailsEl) batchDetailsEl.textContent = `Error: ${error.message}`;
+      }
+  }
+  
+  // --- Database Interaction Functions ---
+  
+  function showMessage(message, type = 'success') {
+      const messagesEl = document.getElementById('messages');
+      if(messagesEl) {
+          messagesEl.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+          setTimeout(() => {
+              messagesEl.innerHTML = '';
+          }, 5000);
+      }
+  }
+  
+  async function testDbConnection() {
+      try {
+          const response = await fetch('http://localhost:3000/test-db');
+          const data = await response.json();
+          const testDbStatusEl = document.getElementById('testDbStatus');
+          if (response.ok) {
+              if(testDbStatusEl) testDbStatusEl.textContent = `DB Status: ${data.message} (Time: ${new Date(data.currentTime).toLocaleString()})`;
+              if(testDbStatusEl) testDbStatusEl.style.color = 'green';
+          } else {
+              if(testDbStatusEl) testDbStatusEl.textContent = `DB Status: Error - ${data.error}`;
+              if(testDbStatusEl) testDbStatusEl.style.color = 'red';
+          }
+      } catch (error) {
+          console.error('Error testing DB connection:', error);
+          const testDbStatusEl = document.getElementById('testDbStatus');
+          if(testDbStatusEl) testDbStatusEl.textContent = `DB Status: Network Error - ${error.message}`;
+          if(testDbStatusEl) testDbStatusEl.style.color = 'red';
+      }
+  }
+  
+  async function createUser(event) {
+      event.preventDefault();
+      const createUserForm = document.getElementById('createUserForm');
+      const username = createUserForm.username.value;
+      const password = createUserForm.password.value;
+      const role = createUserForm.role.value;
+  
+      try {
+          const response = await fetch('http://localhost:3000/users', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ username, password, role }),
+          });
+          const data = await response.json();
+          if (response.ok) {
+              showMessage(data.message, 'success');
+              createUserForm.reset();
+              fetchUsers(); // Refresh user list
+          } else {
+              showMessage(`Error: ${data.error}`, 'error');
+          }
+      } catch (error) {
+          console.error('Error creating user:', error);
+          showMessage(`Network Error: ${error.message}`, 'error');
+      }
+  }
+  
+  async function fetchUsers() {
+      try {
+          const response = await fetch('http://localhost:3000/users');
+          const data = await response.json();
+          const userListEl = document.getElementById('userList');
+          if (response.ok) {
+              if(userListEl) userListEl.innerHTML = ''; // Clear existing list
+              if (data.users && data.users.length > 0) {
+                  const ul = document.createElement('ul');
+                  data.users.forEach(user => {
+                      const li = document.createElement('li');
+                      li.textContent = `ID: ${user.id}, Username: ${user.username}, Role: ${user.role}, Created: ${new Date(user.created_at).toLocaleString()}`;
+                      ul.appendChild(li);
+                  });
+                  if(userListEl) userListEl.appendChild(ul);
+              } else {
+                  if(userListEl) userListEl.innerHTML = '<p>No users yet.</p>';
+              }
+          }
+      } catch (error) {
+          console.error('Error fetching users:', error);
+          showMessage(`Network Error fetching users: ${error.message}`, 'error');
+      }
+  }
+  
+  
+  // Global functions for onclick handlers
+  window.showBidModal = showBidModal;
+  window.viewQRCode = viewQRCode;
+  window.hideToast = hideToast;
+  
+  console.log('AgriTrace: Advanced blockchain agricultural traceability system loaded successfully! 🌾🔗');

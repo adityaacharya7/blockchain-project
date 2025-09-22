@@ -1,50 +1,114 @@
-import express from 'express';
-import { ethers } from 'ethers';
-import fs from 'fs';
+require('dotenv').config({ path: './.env' });
+const express = require('express');
+const cors = require('cors');
+const { ethers } = require('ethers');
+const { Pool } = require('pg'); // Import pg Pool
+const ProvenanceABI = require('../../artifacts/contracts/Provenance.sol/Provenance.json').abi;
+
+// PostgreSQL Connection Pool
+const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+});
+
+// Test DB connection
+pool.connect((err, client, release) => {
+    if (err) {
+        return console.error('Error acquiring client', err.stack);
+    }
+    client.query('SELECT NOW()', (err, result) => {
+        release();
+        if (err) {
+            return console.error('Error executing query', err.stack);
+        }
+        console.log('PostgreSQL connected:', result.rows[0].now);
+    });
+});
 
 const app = express();
+const port = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
 app.use(express.json());
 
-const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
-const signer = provider.getSigner();
+// Ethereum setup
+const provider = new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/"); // Hardhat Network default
+const provenanceContractAddress = "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"; // Replace with your deployed contract address
+const provenanceContract = new ethers.Contract(provenanceContractAddress, ProvenanceABI, provider);
 
-const contractArtifact = JSON.parse(fs.readFileSync('artifacts/contracts/Provenance.sol/Provenance.json'));
-const contractAddress = 'YOUR_CONTRACT_ADDRESS'; // Replace with your contract address
-const contract = new ethers.Contract(contractAddress, contractArtifact.abi, signer);
+// Simple password hashing (for demonstration, use bcrypt in production)
+const hashPassword = (password) => {
+    // In a real application, use a strong hashing library like bcrypt
+    return `hashed_${password}`;
+};
 
-app.post('/api/register', async (req, res) => {
-  const { ipfsHash } = req.body;
-  try {
-    const tx = await contract.registerBatch(ipfsHash);
-    await tx.wait();
-    res.status(200).send({ message: 'Batch registered successfully' });
-  } catch (error) {
-    res.status(500).send({ message: 'Error registering batch', error });
-  }
+// Routes
+app.get('/', (req, res) => {
+    res.send('Backend API is running!');
 });
 
-app.post('/api/transfer', async (req, res) => {
-  const { id, to } = req.body;
-  try {
-    const tx = await contract.transferOwnership(id, to);
-    await tx.wait();
-    res.status(200).send({ message: 'Ownership transferred successfully' });
-  } catch (error) {
-    res.status(500).send({ message: 'Error transferring ownership', error });
-  }
+// Example route to interact with the contract (read batchCount)
+app.get('/batchCount', async (req, res) => {
+    try {
+        const count = await provenanceContract.batchCount();
+        res.json({ batchCount: count.toString() });
+    } catch (error) {
+        console.error("Error fetching batch count:", error);
+        res.status(500).json({ error: "Failed to fetch batch count" });
+    }
 });
 
-app.get('/api/batch/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const batch = await contract.getBatch(id);
-    res.status(200).send(batch);
-  } catch (error) {
-    res.status(500).send({ message: 'Error getting batch', error });
-  }
+// Test DB endpoint
+app.get('/test-db', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW() as current_time');
+        res.json({ message: 'Database connection successful', currentTime: result.rows[0].current_time });
+    } catch (error) {
+        console.error('Error testing DB connection:', error);
+        res.status(500).json({ error: 'Failed to test database connection' });
+    }
 });
 
-const port = 3001;
+// POST /users - Create a new user
+app.post('/users', async (req, res) => {
+    const { username, password, role } = req.body;
+
+    if (!username || !password || !role) {
+        return res.status(400).json({ error: 'Username, password, and role are required' });
+    }
+
+    try {
+        const password_hash = hashPassword(password);
+        const result = await pool.query(
+            'INSERT INTO users (username, password_hash, role) VALUES ($1, $2, $3) RETURNING id, username, role, created_at',
+            [username, password_hash, role]
+        );
+        res.status(201).json({ message: 'User created successfully', user: result.rows[0] });
+    } catch (error) {
+        console.error('Error creating user:', error);
+        if (error.code === '23505') { // Unique violation error code
+            return res.status(409).json({ error: 'Username already exists' });
+        }
+        res.status(500).json({ error: 'Failed to create user' });
+    }
+});
+
+// GET /users - Get all users
+app.get('/users', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC');
+        res.json({ users: result.rows });
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
+    console.log(`Backend API listening at http://localhost:${port}`);
 });

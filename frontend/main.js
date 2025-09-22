@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
 
 // --- Contract Details ---
-const contractAddress = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512';
+const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'; // <-- Updated Address
 const contractABI = [
     {
       "anonymous": false,
@@ -165,6 +165,8 @@ const contractABI = [
 let provider;
 let signer;
 let contract;
+const hardhatNetworkId = '31337';
+
 
 // --- UI Elements ---
 const connectButton = document.getElementById('connectButton');
@@ -187,6 +189,48 @@ async function connectWallet() {
     try {
         // Request account access
         await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+        // Check the network
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (parseInt(chainId, 16).toString() !== hardhatNetworkId) {
+            try {
+                // Try to switch to the Hardhat network
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${parseInt(hardhatNetworkId, 10).toString(16)}` }],
+                });
+            } catch (switchError) {
+                // This error code indicates that the chain has not been added to MetaMask.
+                if (switchError.code === 4902) {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [
+                                {
+                                    chainId: `0x${parseInt(hardhatNetworkId, 10).toString(16)}`,
+                                    chainName: 'Hardhat Localhost',
+                                    rpcUrls: ['http://127.0.0.1:8545'],
+                                    nativeCurrency: {
+                                        name: 'Ethereum',
+                                        symbol: 'ETH',
+                                        decimals: 18,
+                                    },
+                                },
+                            ],
+                        });
+                    } catch (addError) {
+                        console.error('Failed to add the Hardhat network:', addError);
+                        alert('Failed to add the Hardhat network. Please add it manually.');
+                        return;
+                    }
+                } else {
+                    console.error('Failed to switch to the Hardhat network:', switchError);
+                    alert('Failed to switch to the Hardhat network.');
+                    return;
+                }
+            }
+        }
+
 
         // Set up provider and signer
         provider = new ethers.BrowserProvider(window.ethereum);
@@ -323,3 +367,98 @@ registerBatchButton.addEventListener('click', registerBatch);
 getBatchButton.addEventListener('click', getBatch);
 transferButton.addEventListener('click', transferOwnership);
 getBatchCountButton.addEventListener('click', getBatchCount); // New line
+
+// --- Database Interaction Functions ---
+const messagesEl = document.getElementById('messages');
+const testDbButton = document.getElementById('testDbButton');
+const testDbStatusEl = document.getElementById('testDbStatus');
+const createUserForm = document.getElementById('createUserForm');
+const refreshUsersButton = document.getElementById('refreshUsersButton');
+const userListEl = document.getElementById('userList');
+
+function showMessage(message, type = 'success') {
+    messagesEl.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+    setTimeout(() => {
+        messagesEl.innerHTML = '';
+    }, 5000);
+}
+
+async function testDbConnection() {
+    try {
+        const response = await fetch('http://localhost:3000/test-db');
+        const data = await response.json();
+        if (response.ok) {
+            testDbStatusEl.textContent = `DB Status: ${data.message} (Time: ${new Date(data.currentTime).toLocaleString()})`;
+            testDbStatusEl.style.color = 'green';
+        } else {
+            testDbStatusEl.textContent = `DB Status: Error - ${data.error}`;
+            testDbStatusEl.style.color = 'red';
+        }
+    } catch (error) {
+        console.error('Error testing DB connection:', error);
+        testDbStatusEl.textContent = `DB Status: Network Error - ${error.message}`;
+        testDbStatusEl.style.color = 'red';
+    }
+}
+
+async function createUser(event) {
+    event.preventDefault();
+    const username = createUserForm.username.value;
+    const password = createUserForm.password.value;
+    const role = createUserForm.role.value;
+
+    try {
+        const response = await fetch('http://localhost:3000/users', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password, role }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            showMessage(data.message, 'success');
+            createUserForm.reset();
+            fetchUsers(); // Refresh user list
+        } else {
+            showMessage(`Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        console.error('Error creating user:', error);
+        showMessage(`Network Error: ${error.message}`, 'error');
+    }
+}
+
+async function fetchUsers() {
+    try {
+        const response = await fetch('http://localhost:3000/users');
+        const data = await response.json();
+        if (response.ok) {
+            userListEl.innerHTML = ''; // Clear existing list
+            if (data.users && data.users.length > 0) {
+                const ul = document.createElement('ul');
+                data.users.forEach(user => {
+                    const li = document.createElement('li');
+                    li.textContent = `ID: ${user.id}, Username: ${user.username}, Role: ${user.role}, Created: ${new Date(user.created_at).toLocaleString()}`;
+                    ul.appendChild(li);
+                });
+                userListEl.appendChild(ul);
+            } else {
+                userListEl.innerHTML = '<p>No users yet.</p>';
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        showMessage(`Network Error fetching users: ${error.message}`, 'error');
+    }
+}
+
+// --- New Event Listeners for DB Interaction ---
+testDbButton.addEventListener('click', testDbConnection);
+createUserForm.addEventListener('submit', createUser);
+refreshUsersButton.addEventListener('click', fetchUsers);
+
+// Initial load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchUsers();
+});

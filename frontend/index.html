@@ -1,61 +1,747 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Provenance dApp</title>
-    <link rel="stylesheet" href="./style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriTrace - Farm to Fork: Transparent Agriculture Powered by Blockchain</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div id="app">
-        <h1>Provenance dApp</h1>
-        <button id="connectButton">Connect Wallet</button>
-        <div id="walletInfo">
-            <p>Status: <span id="status">Not Connected</span></p>
-            <p>Account: <span id="account">N/A</span></p>
-        </div>
-
-        <div class="card">
-            <h2>Register a New Batch</h2>
-            <div class="form-group">
-                <label for="ipfsHash">IPFS Hash:</label>
-                <input type="text" id="ipfsHash" placeholder="e.g., Qm..." />
+    <!-- Landing Page -->
+    <div id="landingPage" class="landing-page">
+        <nav class="landing-nav">
+            <div class="nav-brand">
+                <i class="fas fa-seedling"></i>
+                <span>AgriTrace</span>
             </div>
-            <button id="registerBatchButton">Register Batch</button>
-        </div>
-
-        <div class="card">
-            <h2>Get Batch Details</h2>
-            <div class="form-group">
-                <label for="batchId">Batch ID:</label>
-                <input type="number" id="batchId" placeholder="e.g., 1" />
+            <button class="btn btn--outline" id="skipToDemo">Demo Mode</button>
+        </nav>
+        
+        <div class="hero-section">
+            <div class="hero-content">
+                <div class="blockchain-animation">
+                    <div class="blockchain-blocks">
+                        <div class="block">🌾</div>
+                        <div class="block">🔗</div>
+                        <div class="block">🚚</div>
+                        <div class="block">🔗</div>
+                        <div class="block">🏬</div>
+                        <div class="block">🔗</div>
+                        <div class="block">🛒</div>
+                    </div>
+                </div>
+                <h1 class="hero-title">Farm to Fork: Transparent Agriculture Powered by Blockchain</h1>
+                <p class="hero-subtitle">Revolutionary traceability system connecting farmers, distributors, retailers, and consumers through immutable blockchain technology</p>
+                
+                <div class="hero-features">
+                    <div class="feature-item">🔗 Immutable blockchain records</div>
+                    <div class="feature-item">📱 QR code traceability</div>
+                    <div class="feature-item">💰 Fair pricing with smart contracts</div>
+                    <div class="feature-item">🛡️ Product authenticity verification</div>
+                    <div class="feature-item">📊 Real-time analytics dashboard</div>
+                    <div class="feature-item">🌍 Global supply chain transparency</div>
+                </div>
+                
+                <button class="btn btn--primary btn--lg hero-cta" id="getStartedBtn">Get Started</button>
             </div>
-            <button id="getBatchButton">Get Batch</button>
-        </div>
-
-        <div class="card">
-            <h2>Get Total Batch Count</h2>
-            <button id="getBatchCountButton">Get Count</button>
         </div>
         
-        <div class="card">
-            <h2>Transfer Batch Ownership</h2>
-            <div class="form-group">
-                <label for="transferBatchId">Batch ID:</label>
-                <input type="number" id="transferBatchId" placeholder="e.g., 1" />
+        <div class="system-stats">
+            <div class="container">
+                <h2>System Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-icon">👨‍🌾</div>
+                        <div class="stat-number">2,847</div>
+                        <div class="stat-label">Farmers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-number">18,562</div>
+                        <div class="stat-label">Crops Registered</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-number">₹12.45Cr</div>
+                        <div class="stat-label">Total Value Traded</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon">🛡️</div>
+                        <div class="stat-number">98.7%</div>
+                        <div class="stat-label">Verified Products</div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="toAddress">To Address:</label>
-                <input type="text" id="toAddress" placeholder="e.g., 0x..."/>
-            </div>
-            <button id="transferButton">Transfer</button>
         </div>
-
-        <div id="results">
-            <h2>Results</h2>
-            <pre id="batchDetails"></pre>
+        
+        <div class="role-selection-section">
+            <div class="container">
+                <h2>Choose Your Role</h2>
+                <div class="roles-grid">
+                    <div class="role-card farmer-theme" data-role="farmer">
+                        <div class="role-icon">👨‍🌾</div>
+                        <h3>Farmer</h3>
+                        <p>Register crops, manage inventory, monitor bids, and track earnings</p>
+                        <ul>
+                            <li>Crop registration & QR generation</li>
+                            <li>Real-time bid monitoring</li>
+                            <li>Earnings analytics</li>
+                        </ul>
+                        <button class="btn btn--primary">Enter as Farmer</button>
+                    </div>
+                    <div class="role-card distributor-theme" data-role="distributor">
+                        <div class="role-icon">🚚</div>
+                        <h3>Distributor</h3>
+                        <p>Browse available crops, place competitive bids, manage logistics</p>
+                        <ul>
+                            <li>Smart bidding system</li>
+                            <li>Logistics management</li>
+                            <li>Performance analytics</li>
+                        </ul>
+                        <button class="btn btn--primary">Enter as Distributor</button>
+                    </div>
+                    <div class="role-card retailer-theme" data-role="retailer">
+                        <div class="role-icon">🏬</div>
+                        <h3>Retailer</h3>
+                        <p>Verify product authenticity, manage inventory, track deliveries</p>
+                        <ul>
+                            <li>QR verification system</li>
+                            <li>Quality assurance</li>
+                            <li>Shelf life monitoring</li>
+                        </ul>
+                        <button class="btn btn--primary">Enter as Retailer</button>
+                    </div>
+                    <div class="role-card consumer-theme" data-role="consumer">
+                        <div class="role-icon">🛒</div>
+                        <h3>Consumer</h3>
+                        <p>Scan QR codes, trace product journey, verify authenticity</p>
+                        <ul>
+                            <li>Product journey visualization</li>
+                            <li>Authenticity verification</li>
+                            <li>Farmer connection</li>
+                        </ul>
+                        <button class="btn btn--primary">Enter as Consumer</button>
+                    </div>
+                    <div class="role-card admin-theme" data-role="admin">
+                        <div class="role-icon">⚙️</div>
+                        <h3>Admin</h3>
+                        <p>Monitor system health, analyze platform metrics, manage users</p>
+                        <ul>
+                            <li>System analytics</li>
+                            <li>Blockchain monitoring</li>
+                            <li>Platform management</li>
+                        </ul>
+                        <button class="btn btn--primary">Enter as Admin</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <script type="module" src="/main.js"></script>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="main-app hidden">
+        <!-- Navigation Header -->
+        <nav class="nav-header">
+            <div class="nav-brand">
+                <i class="fas fa-seedling"></i>
+                <span>AgriTrace</span>
+            </div>
+            <div class="nav-center">
+                <div class="role-switcher">
+                    <label>Demo Mode:</label>
+                    <select id="roleSwitcher" class="form-control role-select">
+                        <option value="farmer">👨‍🌾 Farmer</option>
+                        <option value="distributor">🚚 Distributor</option>
+                        <option value="retailer">🏬 Retailer</option>
+                        <option value="consumer">🛒 Consumer</option>
+                        <option value="admin">⚙️ Admin</option>
+                        <option value="provenance">🔧 Provenance</option>
+                    </select>
+                </div>
+            </div>
+            <div class="nav-user">
+                <span id="userRole" class="user-role">Farmer</span>
+                <span id="userName" class="user-name">Green Valley Farms</span>
+                <button class="btn btn--outline btn--sm" id="backToLanding">← Landing</button>
+            </div>
+        </nav>
+
+        <!-- Sidebar Navigation -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-menu">
+                <a href="#" class="menu-item active" data-section="home">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="menu-item" data-section="batches">
+                    <i class="fas fa-boxes"></i>
+                    <span>Batches</span>
+                </a>
+                <a href="#" class="menu-item" data-section="transactions">
+                    <i class="fas fa-receipt"></i>
+                    <span>Transactions</span>
+                </a>
+                <a href="#" class="menu-item" data-section="qr">
+                    <i class="fas fa-qrcode"></i>
+                    <span>QR Codes</span>
+                </a>
+                <a href="#" class="menu-item" data-section="analytics">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Analytics</span>
+                </a>
+                <a href="#" class="menu-item" data-section="provenance">
+                    <i class="fas fa-cogs"></i>
+                    <span>Provenance</span>
+                </a>
+                <a href="#" class="menu-item" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="dashboard-container">
+            <!-- Farmer Dashboard -->
+            <div id="farmerDashboard" class="dashboard farmer-theme">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-tractor"></i> Farmer Dashboard</h1>
+                        <p>Welcome back, Green Valley Organic Farms</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn--primary" id="addCropBtn">
+                            <i class="fas fa-plus"></i> Add New Crop
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card green-theme">
+                        <div class="stat-icon">🌾</div>
+                        <div class="stat-content">
+                            <h3>45</h3>
+                            <p>Crops Listed</p>
+                            <span class="stat-change">+5 this month</span>
+                        </div>
+                    </div>
+                    <div class="stat-card green-theme">
+                        <div class="stat-icon">💰</div>
+                        <div class="stat-content">
+                            <h3>₹8,45,670</h3>
+                            <p>Total Earnings</p>
+                            <span class="stat-change">+23% vs last month</span>
+                        </div>
+                    </div>
+                    <div class="stat-card green-theme">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-content">
+                            <h3>12</h3>
+                            <p>Pending Bids</p>
+                            <span class="stat-change">Active bidding</span>
+                        </div>
+                    </div>
+                    <div class="stat-card green-theme">
+                        <div class="stat-icon">⭐</div>
+                        <div class="stat-content">
+                            <h3>4.8</h3>
+                            <p>Quality Rating</p>
+                            <span class="stat-change">Excellent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Monthly Earnings Trend</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="farmerEarningsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activity">
+                        <h3>Recent Activity</h3>
+                        <div class="activity-list" id="farmerActivity"></div>
+                    </div>
+                </div>
+
+                <div class="crops-section">
+                    <h3>My Crops</h3>
+                    <div class="crops-grid" id="farmerCrops"></div>
+                </div>
+            </div>
+
+            <!-- Distributor Dashboard -->
+            <div id="distributorDashboard" class="dashboard distributor-theme hidden">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-truck"></i> Distributor Dashboard</h1>
+                        <p>AgriConnect Distribution Hub</p>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card blue-theme">
+                        <div class="stat-icon">🚚</div>
+                        <div class="stat-content">
+                            <h3>15</h3>
+                            <p>Active Bids</p>
+                            <span class="stat-change">Competitive bidding</span>
+                        </div>
+                    </div>
+                    <div class="stat-card blue-theme">
+                        <div class="stat-icon">🏆</div>
+                        <div class="stat-content">
+                            <h3>89</h3>
+                            <p>Won Auctions</p>
+                            <span class="stat-change">94.2% success rate</span>
+                        </div>
+                    </div>
+                    <div class="stat-card blue-theme">
+                        <div class="stat-icon">📦</div>
+                        <div class="stat-content">
+                            <h3>23</h3>
+                            <p>Deliveries Pending</p>
+                            <span class="stat-change">On schedule</span>
+                        </div>
+                    </div>
+                    <div class="stat-card blue-theme">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-content">
+                            <h3>2</h3>
+                            <p>Penalties</p>
+                            <span class="stat-change">Low penalty rate</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Bidding Success Rate</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="distributorSuccessChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="available-crops-preview">
+                        <h3>Available Crops</h3>
+                        <div class="crops-preview" id="distributorCropsPreview"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Retailer Dashboard -->
+            <div id="retailerDashboard" class="dashboard retailer-theme hidden">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-store"></i> Retailer Dashboard</h1>
+                        <p>FreshMart Supermarket Chain</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn--primary" id="scanQRBtn">
+                            <i class="fas fa-qrcode"></i> Scan QR Code
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card orange-theme">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <h3>156</h3>
+                            <p>Batches Verified</p>
+                            <span class="stat-change">All authentic</span>
+                        </div>
+                    </div>
+                    <div class="stat-card orange-theme">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-content">
+                            <h3>3</h3>
+                            <p>Shelf Life Alerts</p>
+                            <span class="stat-change">Action required</span>
+                        </div>
+                    </div>
+                    <div class="stat-card orange-theme">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-content">
+                            <h3>96.8%</h3>
+                            <p>Quality Score</p>
+                            <span class="stat-change">Excellent</span>
+                        </div>
+                    </div>
+                    <div class="stat-card orange-theme">
+                        <div class="stat-icon">💬</div>
+                        <div class="stat-content">
+                            <h3>4.7</h3>
+                            <p>Customer Rating</p>
+                            <span class="stat-change">High satisfaction</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Weekly Verification Trends</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="retailerVerificationChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="inventory-alerts">
+                        <h3>Inventory Alerts</h3>
+                        <div class="alerts-list" id="retailerAlerts"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Consumer Dashboard -->
+            <div id="consumerDashboard" class="dashboard consumer-theme hidden">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-search"></i> Consumer Dashboard</h1>
+                        <p>Verify your food's journey from farm to fork</p>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card purple-theme">
+                        <div class="stat-icon">📱</div>
+                        <div class="stat-content">
+                            <h3>47</h3>
+                            <p>QR Scans Performed</p>
+                            <span class="stat-change">Active consumer</span>
+                        </div>
+                    </div>
+                    <div class="stat-card purple-theme">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-content">
+                            <h3>12</h3>
+                            <p>Favorite Products</p>
+                            <span class="stat-change">Trusted choices</span>
+                        </div>
+                    </div>
+                    <div class="stat-card purple-theme">
+                        <div class="stat-icon">🛡️</div>
+                        <div class="stat-content">
+                            <h3>98.5%</h3>
+                            <p>Trust Score</p>
+                            <span class="stat-change">Verified purchases</span>
+                        </div>
+                    </div>
+                    <div class="stat-card purple-theme">
+                        <div class="stat-icon">🛒</div>
+                        <div class="stat-content">
+                            <h3>8</h3>
+                            <p>Recent Purchases</p>
+                            <span class="stat-change">This month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="qr-scanner-section">
+                    <div class="scanner-card">
+                        <div class="scanner-interface">
+                            <div class="scanner-viewfinder">
+                                <div class="scanner-corners"></div>
+                                <i class="fas fa-camera scanner-icon"></i>
+                            </div>
+                            <button class="btn btn--primary btn--lg" id="simulateScanBtn">
+                                <i class="fas fa-qrcode"></i> Simulate QR Scan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="product-search">
+                        <h3>Or Search by Product ID</h3>
+                        <div class="search-input">
+                            <input type="text" class="form-control" id="productIdInput" placeholder="Enter product ID (e.g., crop_001)">
+                            <button class="btn btn--primary" id="searchProductBtn">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="productJourney" class="product-journey hidden"></div>
+            </div>
+
+            <!-- Admin Dashboard -->
+            <div id="adminDashboard" class="dashboard admin-theme hidden">
+                <div class="dashboard-header">
+                    <div class="header-left">
+                        <h1><i class="fas fa-cog"></i> Admin Dashboard</h1>
+                        <p>System Administration & Analytics</p>
+                    </div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card teal-theme">
+                        <div class="stat-icon">🌾</div>
+                        <div class="stat-content">
+                            <h3>18,562</h3>
+                            <p>Total Crops</p>
+                            <span class="stat-change">+1,234 this month</span>
+                        </div>
+                    </div>
+                    <div class="stat-card teal-theme">
+                        <div class="stat-icon">📈</div>
+                        <div class="stat-content">
+                            <h3>₹12.45Cr</h3>
+                            <p>Volume Traded</p>
+                            <span class="stat-change">+15% growth</span>
+                        </div>
+                    </div>
+                    <div class="stat-card teal-theme">
+                        <div class="stat-icon">💹</div>
+                        <div class="stat-content">
+                            <h3>23.4%</h3>
+                            <p>Farmer Income Uplift</p>
+                            <span class="stat-change">Positive impact</span>
+                        </div>
+                    </div>
+                    <div class="stat-card teal-theme">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-content">
+                            <h3>99.8%</h3>
+                            <p>System Health</p>
+                            <span class="stat-change">Optimal performance</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Platform Growth</h3>
+                        </div>
+                        <div style="position: relative; height: 300px;">
+                            <canvas id="platformGrowthChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="blockchain-explorer">
+                        <h3>Live Blockchain Events</h3>
+                        <div class="events-list" id="blockchainEvents"></div>
+                    </div>
+                </div>
+
+                <div class="contracts-section">
+                    <h3>Smart Contracts</h3>
+                    <div class="contracts-grid" id="smartContracts"></div>
+                </div>
+            </div>
+
+            <!-- Provenance dApp Dashboard -->
+            <div id="provenanceDashboard" class="dashboard hidden">
+                <div id="app-container">
+                    <h1>Blockchain Provenance dApp</h1>
+            
+                    <div id="messages"></div>
+            
+                    <!-- Blockchain Interaction Section -->
+                    <div class="card">
+                        <h2>Wallet Connection</h2>
+                        <button id="connectButton">Connect Wallet</button>
+                        <div id="walletInfo">
+                            <p>Status: <span id="status">Not Connected</span></p>
+                            <p>Account: <span id="account">N/A</span></p>
+                        </div>
+                    </div>
+            
+                    <div class="card">
+                        <h2>Register a New Batch (Blockchain)</h2>
+                        <div class="form-group">
+                            <label for="ipfsHash">IPFS Hash:</label>
+                            <input type="text" id="ipfsHash" placeholder="e.g., Qm..."/>
+                        </div>
+                        <button id="registerBatchButton">Register Batch</button>
+                    </div>
+            
+                    <div class="card">
+                        <h2>Get Batch Details (Blockchain)</h2>
+                        <div class="form-group">
+                            <label for="batchId">Batch ID:</label>
+                            <input type="number" id="batchId" placeholder="e.g., 1"/>
+                        </div>
+                        <button id="getBatchButton">Get Batch</button>
+                    </div>
+            
+                    <div class="card">
+                        <h2>Get Total Batch Count (Blockchain)</h2>
+                        <button id="getBatchCountButton">Get Count</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>Transfer Batch Ownership (Blockchain)</h2>
+                        <div class="form-group">
+                            <label for="transferBatchId">Batch ID:</label>
+                            <input type="number" id="transferBatchId" placeholder="e.g., 1"/>
+                        </div>
+                        <div class="form-group">
+                            <label for="toAddress">To Address:</label>
+                            <input type="text" id="toAddress" placeholder="e.g., 0x..."/>
+                        </div>
+                        <button id="transferButton">Transfer</button>
+                    </div>
+            
+                    <div id="results" class="card">
+                        <h2>Blockchain Results</h2>
+                        <pre id="batchDetails"></pre>
+                    </div>
+            
+                    <hr>
+            
+                    <!-- Database Interaction Section -->
+                    <div class="card">
+                        <h2>Test Database Connection</h2>
+                        <button id="testDbButton">Test DB</button>
+                        <div id="testDbStatus"></div>
+                    </div>
+            
+                    <div class="card">
+                        <h2>Create New User (Database)</h2>
+                        <form id="createUserForm">
+                        <div>
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div>
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        <div>
+                            <label for="role">Role:
+                            <select id="role" name="role" required>
+                            <option value="">Select Role</option>
+                            <option value="farmer">Farmer</option>
+                            <option value="distributor">Distributor</option>
+                            <option value="retailer">Retailer</option>
+                            </select>
+                        </div>
+                        <button type="submit">Create User</button>
+                        </form>
+                    </div>
+            
+                    <div class="card">
+                        <h2>Existing Users (Database)</h2>
+                        <button id="refreshUsersButton">Refresh Users</button>
+                        <div id="userList">
+                        <p>No users yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Add Crop Modal -->
+    <div id="addCropModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Crop</h2>
+                <button class="modal-close" id="closeCropModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addCropForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Crop Type</label>
+                            <select class="form-control" id="cropType" required>
+                                <option value="">Select crop type</option>
+                                <option value="Organic Tomatoes">Organic Tomatoes</option>
+                                <option value="Basmati Rice">Basmati Rice</option>
+                                <option value="Premium Apples">Premium Apples</option>
+                                <option value="Fresh Wheat">Fresh Wheat</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Variety</label>
+                            <input type="text" class="form-control" id="cropVariety" placeholder="e.g., Roma Tomatoes" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Harvest Date</label>
+                            <input type="date" class="form-control" id="harvestDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quantity (kg)</label>
+                            <input type="number" class="form-control" id="cropQuantity" placeholder="500" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quality Grade</label>
+                            <select class="form-control" id="qualityGrade" required>
+                                <option value="Premium A+">Premium A+</option>
+                                <option value="A Grade">A Grade</option>
+                                <option value="B+ Grade">B+ Grade</option>
+                                <option value="B Grade">B Grade</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Price per kg (₹)</label>
+                            <input type="number" class="form-control" id="cropPrice" placeholder="45" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <input type="text" class="form-control" id="cropLocation" placeholder="Field-A, Green Valley" required>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" id="cancelCrop">Cancel</button>
+                        <button type="submit" class="btn btn--primary">
+                            <i class="fas fa-plus"></i> Register Crop
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bid Modal -->
+    <div id="bidModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Place Smart Bid</h2>
+                <button class="modal-close" id="closeBidModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="bidCropInfo" class="crop-info"></div>
+                <form id="bidForm">
+                    <div class="form-group">
+                        <label class="form-label">Bid Amount (₹ per kg)</label>
+                        <input type="number" class="form-control" id="bidAmount" placeholder="65" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Quantity (kg)</label>
+                        <input type="number" class="form-control" id="bidQuantity" placeholder="1000" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Delivery Terms</label>
+                        <textarea class="form-control" id="deliveryTerms" rows="3" placeholder="Ex-farm pickup within 48 hours"></textarea>
+                    </div>
+                    <div class="bid-summary">
+                        <p><strong>Total Value: </strong><span id="totalBidValue">₹0</span></p>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" id="cancelBid">Cancel</button>
+                        <button type="submit" class="btn btn--primary">
+                            <i class="fas fa-gavel"></i> Place Bid
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>

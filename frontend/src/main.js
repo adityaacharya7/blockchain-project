@@ -1,171 +1,14 @@
 import { ethers } from 'ethers';
 import Chart from 'chart.js/auto';
-
-// --- Contract Details ---
-const contractAddress = '0x5fbdb2315678afecb367f032d93f642f64180aa3'; // <-- Updated Address
-const contractABI = [
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "farmer",
-          "type": "address"
-        }
-      ],
-      "name": "BatchRegistered",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "from",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "to",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "inputs": [],
-      "name": "batchCount",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        }
-      ],
-      "name": "batches",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "farmer",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "ipfsHash",
-          "type": "string"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_id",
-          "type": "uint256"
-        }
-      ],
-      "name": "getBatch",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "",
-          "type": "address"
-        },
-        {
-          "internalType": "string",
-          "name": "",
-          "type": "string"
-        },
-        {
-          "internalType": "address[]",
-          "name": "",
-          "type": "address[]"
-        },
-        {
-          "internalType": "uint256[]",
-          "name": "",
-          "type": "uint256[]"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "string",
-          "name": "_ipfsHash",
-          "type": "string"
-        }
-      ],
-      "name": "registerBatch",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "uint256",
-          "name": "_id",
-          "type": "uint256"
-        },
-        {
-          "internalType": "address",
-          "name": "_to",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-  ];
+import { provenanceAddress, auctionAddress } from './contract-config.js';
+import ProvenanceABI from './contracts/Provenance.json';
+import AuctionABI from './contracts/Auction.json';
 
 // --- Global State ---
 let provider;
 let signer;
-let contract;
+let provenanceContract;
+let auctionContract;
 const hardhatNetworkId = '31337';
 
 // Application Data with enhanced blockchain simulation
@@ -176,7 +19,7 @@ const appData = {
       features: [
         "🔗 Immutable blockchain records",
         "📱 QR code traceability", 
-        "💰 Fair pricing with smart contracts",
+        "💰 Fair pricing with smart provenanceContracts",
         "🛡️ Product authenticity verification",
         "📊 Real-time analytics dashboard",
         "🌍 Global supply chain transparency"
@@ -737,16 +580,16 @@ const appData = {
   }
   
   window.viewCropDetails = async (cropId) => {
-    if (!contract) {
+    if (!provenanceContract) {
         await connectWallet();
-        if (!contract) {
+        if (!provenanceContract) {
             showToast('error', 'Wallet Error', 'Please connect wallet to view details.');
             return;
         }
     }
 
     try {
-        const batch = await contract.getBatch(cropId);
+        const batch = await provenanceContract.getBatch(cropId);
         const ipfsData = JSON.parse(batch[2]);
 
         const cropDetailsBody = document.getElementById('cropDetailsBody');
@@ -773,6 +616,9 @@ const appData = {
   }
 
   function setupModalEvents() {
+    const closeQrCodeModal = document.getElementById('closeQrCodeModal');
+    if(closeQrCodeModal) closeQrCodeModal.addEventListener('click', () => hideModal('qrCodeModal'));
+
     const closeCropDetailsModal = document.getElementById('closeCropDetailsModal');
     if(closeCropDetailsModal) closeCropDetailsModal.addEventListener('click', () => hideModal('cropDetailsModal'));
 
@@ -801,6 +647,7 @@ const appData = {
     // Form submissions
     const addCropForm = document.getElementById('addCropForm');
     const bidForm = document.getElementById('bidForm');
+    const createAuctionForm = document.getElementById('createAuctionForm');
   
     if (addCropForm) {
       addCropForm.addEventListener('submit', handleAddCrop);
@@ -809,10 +656,15 @@ const appData = {
     if (bidForm) {
       bidForm.addEventListener('submit', handlePlaceBid);
     }
+
+    if (createAuctionForm) {
+        createAuctionForm.addEventListener('submit', handleCreateAuction);
+    }
   
     // Cancel buttons
     const cancelCrop = document.getElementById('cancelCrop');
     const cancelBid = document.getElementById('cancelBid');
+    const cancelAuction = document.getElementById('cancelAuction');
   
     if (cancelCrop) {
       cancelCrop.addEventListener('click', (e) => {
@@ -827,13 +679,19 @@ const appData = {
         hideModal('bidModal');
       });
     }
+
+    if (cancelAuction) {
+        cancelAuction.addEventListener('click', (e) => {
+            e.preventDefault();
+            hideModal('createAuctionModal');
+        });
+    }
   
     // Bid calculation
     const bidAmount = document.getElementById('bidAmount');
     const bidQuantity = document.getElementById('bidQuantity');
   
     if (bidAmount) bidAmount.addEventListener('input', updateBidTotal);
-    if (bidQuantity) bidQuantity.addEventListener('input', updateBidTotal);
   }
   
   function showLandingPage() {
@@ -1011,20 +869,20 @@ const appData = {
   
   async function loadOnChainCrops(filterByFarmer = false) {
     console.log('Attempting to load on-chain crops...');
-    if (!contract) {
+    if (!provenanceContract) {
         console.log('Contract object not found, attempting to connect wallet...');
         await connectWallet(); 
-        if (!contract) {
+        if (!provenanceContract) {
             console.error("Cannot load crops, wallet not connected after attempting to connect.");
             showToast('error', 'Wallet Error', 'Please connect your wallet to view crops.');
             return [];
         }
-        console.log('Wallet connected, contract object is now available.');
+        console.log('Wallet connected, provenanceContract object is now available.');
     }
 
     try {
         console.log('Fetching batch count...');
-        const batchCount = await contract.batchCount();
+        const batchCount = await provenanceContract.batchCount();
         console.log(`Batch count: ${batchCount}`);
 
         const crops = [];
@@ -1035,7 +893,7 @@ const appData = {
         for (let i = 1; i <= batchCount; i++) {
             try {
                 console.log(`Fetching batch ${i}...`);
-                const batch = await contract.getBatch(i);
+                const batch = await provenanceContract.getBatch(i);
                 console.log('Batch data:', batch);
                 
                 if (filterByFarmer && userWalletAddress && batch[1].toLowerCase() !== userWalletAddress.toLowerCase()) {
@@ -1068,7 +926,7 @@ const appData = {
         return crops.reverse();
     } catch (error) {
         console.error('Error in loadOnChainCrops:', error);
-        showToast('error', 'Blockchain Error', 'Could not fetch crop data from the blockchain.');
+        showToast('error', 'Blockchain Error', `Could not fetch crop data: ${error.message}`);
         return [];
     }
   }
@@ -1121,6 +979,9 @@ const appData = {
           </button>
           <button class="btn btn--sm btn--primary" onclick="viewCropDetails('${crop.id}')">
             <i class="fas fa-info-circle"></i> View Details
+          </button>
+          <button class="btn btn--sm btn--secondary" onclick="showCreateAuctionModal('${crop.id}')">
+            <i class="fas fa-gavel"></i> Create Auction
           </button>
         </div>
       </div>
@@ -1191,6 +1052,9 @@ const appData = {
         </div>
       `).join('');
     }
+
+    // Load active auctions
+    loadActiveAuctions();
     
     // Load success rate chart
     setTimeout(() => {
@@ -1228,8 +1092,35 @@ const appData = {
     }
   }
   
+  function onScanSuccess(decodedText, decodedResult) {
+    // handle the scanned code as you like, for example:
+    console.log(`Code matched = ${decodedText}`, decodedResult);
+    showProductJourney(decodedText);
+    html5QrcodeScanner.clear();
+  }
+
+  function onScanFailure(error) {
+    // handle scan failure, usually better to ignore and keep scanning.
+    // for example:
+    console.warn(`Code scan error = ${error}`);
+  }
+
+  let html5QrcodeScanner;
+
+  function setupQrScanner() {
+    html5QrcodeScanner = new Html5QrcodeScanner(
+        "qr-reader",
+        {
+            fps: 10,
+            qrbox: { width: 250, height: 250 }
+        },
+        /* verbose= */ false);
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  }
+
   async function loadRetailerDashboard() {
     console.log('Loading retailer dashboard with verification system...');
+    setupQrScanner();
     
     // Load inventory alerts
     const retailerAlerts = document.getElementById('retailerAlerts');
@@ -1309,7 +1200,7 @@ const appData = {
     // Load blockchain events
     loadBlockchainEvents();
     
-    // Load smart contracts
+    // Load smart provenanceContracts
     loadSmartContracts();
     
     // Load platform growth chart
@@ -1341,17 +1232,17 @@ const appData = {
     const smartContracts = document.getElementById('smartContracts');
     if (!smartContracts) return;
   
-    smartContracts.innerHTML = Object.entries(appData.smartContracts).map(([name, contract]) => `
-      <div class="contract-card">
-        <div class="contract-header">
-          <div class="contract-name">${name}</div>
+    smartContracts.innerHTML = Object.entries(appData.smartContracts).map(([name, provenanceContract]) => `
+      <div class="provenanceContract-card">
+        <div class="provenanceContract-header">
+          <div class="provenanceContract-name">${name}</div>
           <span class="status status--success">Active</span>
         </div>
-        <div class="contract-address">${contract.address}</div>
-        <div class="contract-stats">
-          <div>Network: ${contract.network}</div>
-          <div>Deploy Cost: ${contract.deployCost}</div>
-          <div>Interactions: ${contract.interactions.toLocaleString()}</div>
+        <div class="provenanceContract-address">${provenanceContract.address}</div>
+        <div class="provenanceContract-stats">
+          <div>Network: ${provenanceContract.network}</div>
+          <div>Deploy Cost: ${provenanceContract.deployCost}</div>
+          <div>Interactions: ${provenanceContract.interactions.toLocaleString()}</div>
         </div>
       </div>
     `).join('');
@@ -1428,47 +1319,37 @@ const appData = {
     }
   }
   
-  async function showBidModal(cropId) {
-    console.log('Showing bid modal for crop:', cropId);
+  async function showBidModal(auctionId) {
+    console.log('Showing bid modal for auction:', auctionId);
 
-    if (!contract) {
+    if (!auctionContract) {
         await connectWallet();
-        if (!contract) {
+        if (!auctionContract) {
             showToast('error', 'Wallet Error', 'Please connect wallet to bid.');
             return;
         }
     }
 
     try {
-        const batch = await contract.getBatch(cropId);
-        const ipfsData = JSON.parse(batch[2]);
-        const farmerAddress = batch[1];
+        const auction = await auctionContract.auctions(auctionId);
 
-        const bidCropInfo = document.getElementById('bidCropInfo');
+        const bidAuctionInfo = document.getElementById('bidAuctionInfo');
         
-        if (bidCropInfo) {
-          bidCropInfo.innerHTML = `
-            <h3>${ipfsData.type} - ${ipfsData.variety}</h3>
-            <div class="crop-info-grid">
-              <div class="crop-info-item">
-                <strong>Farmer:</strong>
-                <span>${farmerAddress}</span>
+        if (bidAuctionInfo) {
+          bidAuctionInfo.innerHTML = `
+            <h3>Auction for Batch ID: ${auction.batchId}</h3>
+            <div class="auction-info-grid">
+              <div class="auction-info-item">
+                <strong>Highest Bid:</strong>
+                <span>${ethers.formatEther(auction.highestBid)} ETH</span>
               </div>
-              <div class="crop-info-item">
-                <strong>Location:</strong>
-                <span>${ipfsData.location}</span>
+              <div class="auction-info-item">
+                <strong>Highest Bidder:</strong>
+                <span>${auction.highestBidder}</span>
               </div>
-              <div class="crop-info-item">
-                <strong>Quantity:</strong>
-                <span>${ipfsData.quantity} kg</span>
-              </div>
-              <div class="crop-info-item">
-                <strong>Grade:</strong>
-                <span>${ipfsData.qualityGrade}</span>
-              </div>
-              <div class="crop-info-item">
-                <strong>Asking Price:</strong>
-                <span>₹${ipfsData.price}/kg</span>
+              <div class="auction-info-item">
+                <strong>End Time:</strong>
+                <span>${new Date(Number(auction.endTime) * 1000).toLocaleString()}</span>
               </div>
             </div>
           `;
@@ -1476,24 +1357,86 @@ const appData = {
         
         const bidModal = document.getElementById('bidModal');
         if (bidModal) {
-          bidModal.dataset.cropId = cropId;
+          bidModal.dataset.auctionId = auctionId;
           showModal('bidModal');
         }
     } catch (error) {
-        console.error('Error fetching crop for bid:', error);
-        showToast('error', 'Blockchain Error', 'Could not fetch crop details.');
+        console.error('Error fetching auction for bid:', error);
+        showToast('error', 'Blockchain Error', 'Could not fetch auction details.');
     }
   }
   
+  window.showCreateAuctionModal = showCreateAuctionModal;
+
+  function showCreateAuctionModal(batchId) {
+    const createAuctionModal = document.getElementById('createAuctionModal');
+    if (createAuctionModal) {
+        document.getElementById('auctionBatchId').value = batchId;
+        showModal('createAuctionModal');
+    }
+  }
+
+  async function handleCreateAuction(e) {
+    e.preventDefault();
+    const batchId = document.getElementById('auctionBatchId').value;
+    const startingPrice = document.getElementById('startingPrice').value;
+    const durationInMinutes = document.getElementById('auctionDuration').value;
+
+    if (!batchId || !startingPrice || !durationInMinutes) {
+        showToast('error', 'Validation Error', 'Please fill in all fields');
+        return;
+    }
+
+    if (!provenanceContract || !auctionContract) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first');
+        await connectWallet();
+        if(!provenanceContract || !auctionContract) return;
+    }
+
+    try {
+        // Check ownership before proceeding
+        const batch = await provenanceContract.getBatch(batchId);
+        const owner = batch[3][batch[3].length - 1];
+        const currentUser = await signer.getAddress();
+
+        if (owner.toLowerCase() !== currentUser.toLowerCase()) {
+            showToast('error', 'Ownership Error', 'Only the current owner of the batch can create an auction. Please connect the owner account in MetaMask.');
+            return;
+        }
+
+        // 1. Transfer ownership of the batch to the Auction contract
+        showToast('info', 'Step 1/2: Transferring Ownership', `Transferring batch ${batchId} to the auction contract...`);
+        const transferTx = await provenanceContract.transferOwnership(batchId, auctionAddress);
+        await transferTx.wait();
+        showToast('success', 'Step 1/2: Ownership Transferred', `Batch ${batchId} is now owned by the auction contract.`);
+
+        // 2. Create the auction
+        showToast('info', 'Step 2/2: Creating Auction', 'Sending transaction to create the auction...');
+        const durationInSeconds = parseInt(durationInMinutes) * 60;
+        const auctionTx = await auctionContract.createAuction(batchId, ethers.parseEther(startingPrice), durationInSeconds);
+        await auctionTx.wait();
+        
+        hideModal('createAuctionModal');
+        document.getElementById('createAuctionForm').reset();
+        loadActiveAuctions(); // Refresh the auction list
+        
+        showToast('success', 'Auction Created', `Auction for batch ${batchId} created successfully!`);
+
+    } catch (error) {
+        console.error('Error creating auction:', error);
+        showToast('error', 'Blockchain Error', `Error: ${error.message}`);
+    }
+  }
+
   // Form Handlers
   async function handleAddCrop(e) {
     e.preventDefault();
     console.log('Handling add crop form submission');
 
-    if (!contract) {
+    if (!provenanceContract) {
         showToast('error', 'Wallet Error', 'Please connect your wallet first');
         await connectWallet();
-        if(!contract) return;
+        if(!provenanceContract) return;
     }
     
     const formData = {
@@ -1529,7 +1472,7 @@ const appData = {
     const ipfsHash = JSON.stringify({ ...formData, image: imageAsDataUrl });
 
     try {
-        const tx = await contract.registerBatch(ipfsHash);
+        const tx = await provenanceContract.registerBatch(ipfsHash);
         showToast('info', 'Transaction Sent', `Transaction sent: ${tx.hash}... waiting for confirmation.`);
         await tx.wait();
         
@@ -1545,50 +1488,47 @@ const appData = {
     }
   }
   
-  function handlePlaceBid(e) {
+  async function handlePlaceBid(e) {
     e.preventDefault();
     console.log('Handling place bid form submission');
     
     const bidModal = document.getElementById('bidModal');
-    const cropId = bidModal ? bidModal.dataset.cropId : null;
+    const cropId = bidModal ? bidModal.dataset.auctionId : null;
     
     if (!cropId) {
       showToast('error', 'Error', 'No crop selected for bidding');
       return;
     }
     
-    const bidData = {
-      amount: document.getElementById('bidAmount').value,
-      quantity: document.getElementById('bidQuantity').value,
-      deliveryTerms: document.getElementById('deliveryTerms').value
-    };
+    const bidAmount = document.getElementById('bidAmount').value;
     
     // Validate required fields
-    if (!bidData.amount || !bidData.quantity) {
-      showToast('error', 'Validation Error', 'Please fill in bid amount and quantity');
+    if (!bidAmount) {
+      showToast('error', 'Validation Error', 'Please fill in bid amount');
       return;
     }
-    
-    // Create blockchain event
-    const event = createBlockchainEvent('BidPlaced', cropId);
-    appData.blockchainEvents.unshift(event);
-    
-    // Update crop status
-    const crop = appData.crops.find(c => c.id === cropId);
-    if (crop) {
-      crop.status = 'Bidding';
+
+    if (!auctionContract) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first');
+        await connectWallet();
+        if(!auctionContract) return;
     }
-    
-    // Update UI
-    hideModal('bidModal');
-    document.getElementById('bidForm').reset();
-    
-    showToast('success', 'Bid Placed', `Your bid of ₹${bidData.amount}/kg has been placed successfully!`);
-    
-    // Simulate blockchain confirmation
-    setTimeout(() => {
-      showToast('info', 'Smart Contract', `Escrow created for ₹${(bidData.amount * bidData.quantity).toLocaleString()}`);
-    }, 2000);
+
+    try {
+        const tx = await auctionContract.bid(cropId, { value: ethers.parseEther(bidAmount) });
+        showToast('info', 'Transaction Sent', `Transaction sent: ${tx.hash}... waiting for confirmation.`);
+        await tx.wait();
+        
+        hideModal('bidModal');
+        document.getElementById('bidForm').reset();
+        loadActiveAuctions(); // Refresh the auction list
+        
+        showToast('success', 'Bid Placed', `Your bid of ${bidAmount} ETH has been placed successfully!`);
+
+    } catch (error) {
+        console.error('Error placing bid:', error);
+        showToast('error', 'Blockchain Error', `Error: ${error.message}`);
+    }
   }
   
   function updateBidTotal() {
@@ -1714,15 +1654,51 @@ const appData = {
     }
   }
   
-  function viewQRCode(cropId) {
-    const crop = appData.crops.find(c => c.id === cropId);
-    if (crop) {
-      showToast('info', 'QR Code Generated', `QR code for ${crop.type} can be shared with distributors and retailers`);
-      console.log('QR Code viewed for crop:', cropId);
-      // In a real app, this would generate and display an actual QR code
+  async function viewQRCode(cropId) {
+    const qrCodeBody = document.getElementById('qrCodeBody');
+    if (qrCodeBody) {
+        qrCodeBody.innerHTML = '<p>Loading QR Code...</p>';
+        showModal('qrCodeModal');
+
+        try {
+            if (!provenanceContract) {
+                await connectWallet();
+                if (!provenanceContract) {
+                    showToast('error', 'Wallet Error', 'Please connect wallet to generate QR code.');
+                    qrCodeBody.innerHTML = '<p>Error: Wallet not connected.</p>';
+                    return;
+                }
+            }
+
+            const batch = await provenanceContract.getBatch(cropId);
+            const ipfsData = JSON.parse(batch[2]);
+
+            const details = [
+                `Product ID: ${cropId}`,
+                `Type: ${ipfsData.type}`,
+                `Variety: ${ipfsData.variety}`,
+                `Harvest Date: ${formatDate(ipfsData.harvestDate)}`,
+                `Quantity: ${ipfsData.quantity} kg`,
+                `Grade: ${ipfsData.qualityGrade}`,
+                `Price: ₹${ipfsData.price}/kg`,
+                `Location: ${ipfsData.location}`,
+                `Farmer: ${batch[1]}`
+            ].join('\n');
+
+            qrCodeBody.innerHTML = '';
+            const qr = qrcode(0, 'M');
+            qr.addData(details);
+            qr.make();
+            qrCodeBody.innerHTML = qr.createImgTag(4, 16);
+
+        } catch (error) {
+            console.error('Error generating QR code:', error);
+            showToast('error', 'Blockchain Error', 'Could not generate QR code.');
+            qrCodeBody.innerHTML = '<p>Error generating QR code. See console for details.</p>';
+        }
     }
   }
-  
+
   // Toast Notifications
   function showToast(type, title, message, duration = 5000) {
     const toastContainer = document.getElementById('toastContainer');
@@ -1796,7 +1772,7 @@ const appData = {
       const messages = {
         'BidPlaced': 'New bid placed on marketplace',
         'DeliveryConfirmed': 'Product delivery confirmed',
-        'PaymentReleased': 'Smart contract payment released'
+        'PaymentReleased': 'Smart provenanceContract payment released'
       };
       
       showToast('info', 'Blockchain Event', messages[eventType] || 'New blockchain transaction confirmed');
@@ -1886,11 +1862,11 @@ const appData = {
   }
   
   function setupBlockchainEventListeners() {
-    if (!contract) return;
+    if (!provenanceContract) return;
 
     console.log('Setting up blockchain event listeners...');
 
-    contract.on('BatchRegistered', (id, farmer) => {
+    provenanceContract.on('BatchRegistered', (id, farmer) => {
         console.log('Event: BatchRegistered', { id, farmer });
         showToast('info', 'New Batch Registered', `A new crop (ID: ${id}) has been registered by ${farmer.substring(0, 6)}...`);
         
@@ -1900,7 +1876,7 @@ const appData = {
         }
     });
 
-    contract.on('OwnershipTransferred', (id, from, to) => {
+    provenanceContract.on('OwnershipTransferred', (id, from, to) => {
         console.log('Event: OwnershipTransferred', { id, from, to });
         showToast('info', 'Ownership Transferred', `Ownership of crop ${id} transferred to ${to.substring(0, 6)}...`);
 
@@ -1916,6 +1892,9 @@ const appData = {
       }
   
       try {
+          console.log("Using Provenance address:", provenanceAddress);
+          console.log("Using Auction address:", auctionAddress);
+
           // Request account access
           await window.ethereum.request({ method: 'eth_requestAccounts' });
   
@@ -1964,8 +1943,10 @@ const appData = {
           // Set up provider and signer
           provider = new ethers.BrowserProvider(window.ethereum);
           signer = await provider.getSigner();
-          contract = new ethers.Contract(contractAddress, contractABI, signer);
-          window.contract = contract; // Expose contract globally for debugging
+          provenanceContract = new ethers.Contract(provenanceAddress, ProvenanceABI.abi, signer);
+          auctionContract = new ethers.Contract(auctionAddress, AuctionABI.abi, signer);
+          window.provenanceContract = provenanceContract; // Expose provenanceContract globally for debugging
+          window.auctionContract = auctionContract; // Expose provenanceContract globally for debugging
   
           const address = await signer.getAddress();
           
@@ -1984,7 +1965,7 @@ const appData = {
           setupBlockchainEventListeners();
   
           console.log('Wallet connected:', address);
-          console.log('Contract instance:', contract); // New line for debugging
+          console.log('Contract instance:', provenanceContract); // New line for debugging
       } catch (error) {
           console.error('Failed to connect wallet:', error);
           alert('Failed to connect wallet.');
@@ -1992,7 +1973,7 @@ const appData = {
   }
   
   async function registerBatch() {
-      if (!contract) {
+      if (!provenanceContract) {
           alert('Please connect your wallet first.');
           return;
       }
@@ -2018,7 +1999,7 @@ const appData = {
       const ipfsHash = JSON.stringify(dummyCropData);
   
       try {
-          const tx = await contract.registerBatch(ipfsHash);
+          const tx = await provenanceContract.registerBatch(ipfsHash);
           const batchDetailsEl = document.getElementById('batchDetails');
           if(batchDetailsEl) batchDetailsEl.textContent = `Transaction sent: ${tx.hash}...\nWaiting for confirmation...`;
           await tx.wait();
@@ -2032,7 +2013,7 @@ const appData = {
   }
   
   async function getBatch() {
-      if (!contract) {
+      if (!provenanceContract) {
           alert('Please connect your wallet first.');
           return;
       }
@@ -2044,7 +2025,7 @@ const appData = {
       }
   
       try {
-          const result = await contract.getBatch(batchId);
+          const result = await provenanceContract.getBatch(batchId);
           const [id, farmer, ipfsHash, owners, timestamps] = result;
   
           const formattedOwners = owners.join('\n  ');
@@ -2067,7 +2048,7 @@ const appData = {
   }
   
   async function transferOwnership() {
-      if (!contract) {
+      if (!provenanceContract) {
           alert('Please connect your wallet first.');
           return;
       }
@@ -2086,7 +2067,7 @@ const appData = {
       }
   
       try {
-          const tx = await contract.transferOwnership(batchId, toAddress);
+          const tx = await provenanceContract.transferOwnership(batchId, toAddress);
           const batchDetailsEl = document.getElementById('batchDetails');
           if(batchDetailsEl) batchDetailsEl.textContent = `Transfer transaction sent: ${tx.hash}...\nWaiting for confirmation...`;
           await tx.wait();
@@ -2105,12 +2086,12 @@ const appData = {
   
   // New function to get batch count
   async function getBatchCount() {
-      if (!contract) {
+      if (!provenanceContract) {
           alert('Please connect your wallet first.');
           return;
       }
       try {
-          const count = await contract.batchCount();
+          const count = await provenanceContract.batchCount();
           const batchDetailsEl = document.getElementById('batchDetails');
           if(batchDetailsEl) batchDetailsEl.textContent = `Total Batches: ${count.toString()}`;
       } catch (error) {

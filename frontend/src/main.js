@@ -804,12 +804,80 @@ const appData = {
     }, 100);
   }
   
-  function loadFarmerCrops() {
+  async function loadOnChainCrops(filterByFarmer = false) {
+    console.log('Attempting to load on-chain crops...');
+    if (!contract) {
+        console.log('Contract object not found, attempting to connect wallet...');
+        await connectWallet(); 
+        if (!contract) {
+            console.error("Cannot load crops, wallet not connected after attempting to connect.");
+            showToast('error', 'Wallet Error', 'Please connect your wallet to view crops.');
+            return [];
+        }
+        console.log('Wallet connected, contract object is now available.');
+    }
+
+    try {
+        console.log('Fetching batch count...');
+        const batchCount = await contract.batchCount();
+        console.log(`Batch count: ${batchCount}`);
+
+        const crops = [];
+        const signerAddress = await signer.getAddress();
+        console.log(`Signer address: ${signerAddress}`);
+
+        for (let i = 1; i <= batchCount; i++) {
+            try {
+                console.log(`Fetching batch ${i}...`);
+                const batch = await contract.getBatch(i);
+                console.log('Batch data:', batch);
+                
+                if (filterByFarmer && batch[1].toLowerCase() !== signerAddress.toLowerCase()) {
+                    console.log(`Skipping batch ${i} as it does not belong to the current farmer.`);
+                    continue;
+                }
+
+                console.log(`Parsing IPFS data for batch ${i}...`);
+                const ipfsData = JSON.parse(batch[2]);
+                console.log('Parsed IPFS data:', ipfsData);
+
+                crops.push({
+                    id: batch[0].toString(),
+                    farmerId: batch[1],
+                    type: ipfsData.type,
+                    variety: ipfsData.variety,
+                    harvestDate: ipfsData.harvestDate,
+                    quantity: `${ipfsData.quantity} kg`,
+                    qualityGrade: ipfsData.qualityGrade,
+                    location: ipfsData.location,
+                    price: `₹${ipfsData.price}/kg`,
+                    status: 'Available',
+                });
+            } catch (parseError) {
+                console.error(`Skipping batch ${i} due to invalid JSON in ipfsHash:`, parseError);
+                continue; // Skip this batch and continue with the next one
+            }
+        }
+        console.log('Successfully loaded and parsed all valid crops.');
+        return crops.reverse();
+    } catch (error) {
+        console.error('Error in loadOnChainCrops:', error);
+        showToast('error', 'Blockchain Error', 'Could not fetch crop data from the blockchain.');
+        return [];
+    }
+  }
+
+  async function loadFarmerCrops() {
     const farmerCrops = document.getElementById('farmerCrops');
     if (!farmerCrops) return;
-  
-    const crops = appData.crops.filter(crop => crop.farmerId === 'farmer_001');
+
+    const crops = await loadOnChainCrops(true); // Filter by farmer
     
+    if (crops.length === 0) {
+        farmerCrops.innerHTML = "<p>You have not registered any crops on the blockchain yet.</p>";
+        return;
+    }
+
     farmerCrops.innerHTML = crops.map(crop => `
       <div class="crop-card">
         <div class="crop-card-header">
@@ -894,15 +962,15 @@ const appData = {
     }
   }
   
-  function loadDistributorDashboard() {
+  async function loadDistributorDashboard() {
     console.log('Loading distributor dashboard with bidding features...');
     
     // Load available crops preview
     const distributorCropsPreview = document.getElementById('distributorCropsPreview');
     if (distributorCropsPreview) {
-      const availableCrops = appData.crops.filter(crop => crop.status !== 'Sold').slice(0, 3);
+      const availableCrops = await loadOnChainCrops(false); // Show all crops
       
-      distributorCropsPreview.innerHTML = availableCrops.map(crop => `
+      distributorCropsPreview.innerHTML = availableCrops.slice(0, 3).map(crop => `
         <div class="crop-preview-item">
           <div>
             <strong>${crop.type}</strong>
@@ -951,18 +1019,20 @@ const appData = {
     }
   }
   
-  function loadRetailerDashboard() {
+  async function loadRetailerDashboard() {
     console.log('Loading retailer dashboard with verification system...');
     
     // Load inventory alerts
     const retailerAlerts = document.getElementById('retailerAlerts');
     if (retailerAlerts) {
-      const alerts = [
-        { type: 'warning', title: 'Shelf Life Alert', desc: 'Organic Tomatoes expire in 2 days', time: '1 hour ago' },
-        { type: 'info', title: 'New Delivery', desc: 'Premium Apples received', time: '3 hours ago' },
-        { type: 'success', title: 'Quality Check', desc: 'Basmati Rice verified authentic', time: '5 hours ago' }
-      ];
-  
+        const crops = await loadOnChainCrops(false); // Show all crops
+        const alerts = crops.slice(0, 3).map(crop => ({
+            type: 'info',
+            title: 'New Batch Available',
+            desc: `${crop.type} - ${crop.quantity}`,
+            time: `${formatDate(crop.harvestDate)}`
+        }));
+
       retailerAlerts.innerHTML = alerts.map(alert => `
         <div class="alert-item">
           <div class="alert-icon ${alert.type}">
@@ -1149,56 +1219,73 @@ const appData = {
     }
   }
   
-  function showBidModal(cropId) {
+  async function showBidModal(cropId) {
     console.log('Showing bid modal for crop:', cropId);
-    const crop = appData.crops.find(c => c.id === cropId);
-    if (!crop) {
-      console.error('Crop not found:', cropId);
-      return;
+
+    if (!contract) {
+        await connectWallet();
+        if (!contract) {
+            showToast('error', 'Wallet Error', 'Please connect wallet to bid.');
+            return;
+        }
     }
-  
-    const farmer = appData.farmers.find(f => f.id === crop.farmerId);
-    const bidCropInfo = document.getElementById('bidCropInfo');
-    
-    if (bidCropInfo) {
-      bidCropInfo.innerHTML = `
-        <h3>${crop.type} - ${crop.variety}</h3>
-        <div class="crop-info-grid">
-          <div class="crop-info-item">
-            <strong>Farmer:</strong>
-            <span>${farmer ? farmer.name : 'Unknown'}</span>
-          </div>
-          <div class="crop-info-item">
-            <strong>Location:</strong>
-            <span>${farmer ? farmer.location : 'Unknown'}</span>
-          </div>
-          <div class="crop-info-item">
-            <strong>Quantity:</strong>
-            <span>${crop.quantity}</span>
-          </div>
-          <div class="crop-info-item">
-            <strong>Grade:</strong>
-            <span>${crop.qualityGrade}</span>
-          </div>
-          <div class="crop-info-item">
-            <strong>Current Price:</strong>
-            <span>${crop.price}</span>
-          </div>
-        </div>
-      `;
-    }
-    
-    const bidModal = document.getElementById('bidModal');
-    if (bidModal) {
-      bidModal.dataset.cropId = cropId;
-      showModal('bidModal');
+
+    try {
+        const batch = await contract.getBatch(cropId);
+        const ipfsData = JSON.parse(batch[2]);
+        const farmerAddress = batch[1];
+
+        const bidCropInfo = document.getElementById('bidCropInfo');
+        
+        if (bidCropInfo) {
+          bidCropInfo.innerHTML = `
+            <h3>${ipfsData.type} - ${ipfsData.variety}</h3>
+            <div class="crop-info-grid">
+              <div class="crop-info-item">
+                <strong>Farmer:</strong>
+                <span>${farmerAddress}</span>
+              </div>
+              <div class="crop-info-item">
+                <strong>Location:</strong>
+                <span>${ipfsData.location}</span>
+              </div>
+              <div class="crop-info-item">
+                <strong>Quantity:</strong>
+                <span>${ipfsData.quantity} kg</span>
+              </div>
+              <div class="crop-info-item">
+                <strong>Grade:</strong>
+                <span>${ipfsData.qualityGrade}</span>
+              </div>
+              <div class="crop-info-item">
+                <strong>Asking Price:</strong>
+                <span>₹${ipfsData.price}/kg</span>
+              </div>
+            </div>
+          `;
+        }
+        
+        const bidModal = document.getElementById('bidModal');
+        if (bidModal) {
+          bidModal.dataset.cropId = cropId;
+          showModal('bidModal');
+        }
+    } catch (error) {
+        console.error('Error fetching crop for bid:', error);
+        showToast('error', 'Blockchain Error', 'Could not fetch crop details.');
     }
   }
   
   // Form Handlers
-  function handleAddCrop(e) {
+  async function handleAddCrop(e) {
     e.preventDefault();
     console.log('Handling add crop form submission');
+
+    if (!contract) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first');
+        await connectWallet();
+        if(!contract) return;
+    }
     
     const formData = {
       type: document.getElementById('cropType').value,
@@ -1216,42 +1303,25 @@ const appData = {
       return;
     }
     
-    // Simulate blockchain transaction
-    const newCrop = {
-      id: `crop_${Date.now()}`,
-      farmerId: 'farmer_001',
-      type: formData.type,
-      variety: formData.variety,
-      harvestDate: formData.harvestDate,
-      quantity: `${formData.quantity} kg`,
-      qualityGrade: formData.qualityGrade,
-      location: formData.location,
-      price: `₹${formData.price}/kg`,
-      status: 'Available',
-      blockchainHash: generateHash(),
-      ipfsHash: generateIPFSHash(),
-      qrCode: `QR_${Date.now()}`,
-      certifications: ['Organic', 'Verified']
-    };
-    
-    // Add to data
-    appData.crops.push(newCrop);
-    
-    // Create blockchain event
-    const event = createBlockchainEvent('BatchCreated', newCrop.id);
-    appData.blockchainEvents.unshift(event);
-    
-    // Update UI
-    hideModal('addCropModal');
-    document.getElementById('addCropForm').reset();
-    loadFarmerCrops();
-    
-    showToast('success', 'Crop Registered', `${formData.type} successfully registered on blockchain!`);
-    
-    // Simulate blockchain confirmation
-    setTimeout(() => {
-      showToast('info', 'Blockchain Confirmed', `Transaction ${event.txHash.substring(0, 10)}... confirmed in block ${event.blockNumber}`);
-    }, 3000);
+    // In a real application, this data would be uploaded to IPFS.
+    // For this demo, we'll store the JSON directly as the "ipfsHash".
+    const ipfsHash = JSON.stringify(formData);
+
+    try {
+        const tx = await contract.registerBatch(ipfsHash);
+        showToast('info', 'Transaction Sent', `Transaction sent: ${tx.hash}... waiting for confirmation.`);
+        await tx.wait();
+        
+        hideModal('addCropModal');
+        document.getElementById('addCropForm').reset();
+        loadFarmerCrops(); // Refresh the crop list
+        
+        showToast('success', 'Crop Registered', `${formData.type} successfully registered on the blockchain!`);
+
+    } catch (error) {
+        console.error('Error registering batch:', error);
+        showToast('error', 'Blockchain Error', `Error: ${error.message}`);
+    }
   }
   
   function handlePlaceBid(e) {
@@ -1594,6 +1664,30 @@ const appData = {
       fetchUsers();
   }
   
+  function setupBlockchainEventListeners() {
+    if (!contract) return;
+
+    console.log('Setting up blockchain event listeners...');
+
+    contract.on('BatchRegistered', (id, farmer) => {
+        console.log('Event: BatchRegistered', { id, farmer });
+        showToast('info', 'New Batch Registered', `A new crop (ID: ${id}) has been registered by ${farmer.substring(0, 6)}...`);
+        
+        // Refresh the crop lists if the user is on a relevant dashboard
+        if (currentState.role === 'farmer' || currentState.role === 'distributor' || currentState.role === 'retailer') {
+            loadDashboardData(currentState.role);
+        }
+    });
+
+    contract.on('OwnershipTransferred', (id, from, to) => {
+        console.log('Event: OwnershipTransferred', { id, from, to });
+        showToast('info', 'Ownership Transferred', `Ownership of crop ${id} transferred to ${to.substring(0, 6)}...`);
+
+        // Potentially refresh data if viewing the specific batch
+        // For now, a toast is sufficient for real-time feedback.
+    });
+  }
+
   async function connectWallet() {
       if (typeof window.ethereum === 'undefined') {
           alert('MetaMask is not installed!');
@@ -1664,6 +1758,9 @@ const appData = {
               connectButton.textContent = 'Wallet Connected';
               connectButton.disabled = true;
           }
+
+          // Setup event listeners
+          setupBlockchainEventListeners();
   
           console.log('Wallet connected:', address);
           console.log('Contract instance:', contract); // New line for debugging
@@ -1679,11 +1776,25 @@ const appData = {
           return;
       }
   
-      const ipfsHash = document.getElementById('ipfsHash').value;
-      if (!ipfsHash) {
+      // This function is for the Provenance dashboard, which has a simple IPFS hash input.
+      // We will create a dummy JSON object for it.
+      const ipfsHashFromInput = document.getElementById('ipfsHash').value;
+      if (!ipfsHashFromInput) {
           alert('Please enter an IPFS hash.');
           return;
       }
+
+      const dummyCropData = {
+        type: "Dummy Crop",
+        variety: "From Provenance dApp",
+        harvestDate: new Date().toISOString(),
+        quantity: "100",
+        qualityGrade: "A",
+        price: "50",
+        location: "Provenance Test"
+      };
+
+      const ipfsHash = JSON.stringify(dummyCropData);
   
       try {
           const tx = await contract.registerBatch(ipfsHash);

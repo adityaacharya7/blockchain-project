@@ -425,11 +425,177 @@ const appData = {
   
   function initializeApp() {
     setupEventListeners();
+    setupAuthEventListeners();
     showLandingPage();
     startBlockchainSimulation();
     console.log('AgriTrace: System ready');
   }
   
+  function setupAuthEventListeners() {
+    const loginNavBtn = document.getElementById('loginNavBtn');
+    const registerNavBtn = document.getElementById('registerNavBtn');
+    const closeAuthModal = document.getElementById('closeAuthModal');
+    const authModal = document.getElementById('authModal');
+    const switchToRegister = document.getElementById('switchToRegister');
+    const switchToLogin = document.getElementById('switchToLogin');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+
+    if(loginNavBtn) loginNavBtn.addEventListener('click', () => showAuthModal('login'));
+    if(registerNavBtn) registerNavBtn.addEventListener('click', () => showAuthModal('register'));
+    if(closeAuthModal) closeAuthModal.addEventListener('click', () => hideModal('authModal'));
+    if(authModal) authModal.addEventListener('click', (e) => {
+        if (e.target === authModal) {
+            hideModal('authModal');
+        }
+    });
+
+    if(switchToRegister) switchToRegister.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchAuthForm('register');
+    });
+
+    if(switchToLogin) switchToLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        switchAuthForm('login');
+    });
+
+    if(loginForm) loginForm.addEventListener('submit', handleLogin);
+    if(registerForm) registerForm.addEventListener('submit', handleRegistration);
+    if(connectWalletBtn) connectWalletBtn.addEventListener('click', async () => {
+        await connectWallet();
+        if(signer) {
+            const address = await signer.getAddress();
+            const registerWalletAddress = document.getElementById('registerWalletAddress');
+            if(registerWalletAddress) registerWalletAddress.value = address;
+        }
+    });
+  }
+
+  function showAuthModal(form = 'login') {
+    const authModal = document.getElementById('authModal');
+    if (authModal) {
+        switchAuthForm(form);
+        showModal('authModal');
+    }
+  }
+
+  function switchAuthForm(form) {
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const authTitle = document.getElementById('authTitle');
+    const switchToRegister = document.getElementById('switchToRegister');
+    const switchToLogin = document.getElementById('switchToLogin');
+
+    if (form === 'login') {
+        if(loginForm) loginForm.classList.remove('hidden');
+        if(registerForm) registerForm.classList.add('hidden');
+        if(authTitle) authTitle.textContent = 'Login';
+        if(switchToRegister) switchToRegister.parentElement.classList.remove('hidden');
+        if(switchToLogin) switchToLogin.parentElement.classList.add('hidden');
+    } else {
+        if(loginForm) loginForm.classList.add('hidden');
+        if(registerForm) registerForm.classList.remove('hidden');
+        if(authTitle) authTitle.textContent = 'Register';
+        if(switchToRegister) switchToRegister.parentElement.classList.add('hidden');
+        if(switchToLogin) switchToLogin.parentElement.classList.remove('hidden');
+    }
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+    console.log(`Attempting to log in user: ${username}`);
+
+    try {
+        const response = await fetch('http://localhost:3000/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+        console.log('Login response from server:', data);
+
+        if (response.ok) {
+            showToast('success', 'Login Successful', `Welcome back, ${data.user.username}!`);
+            hideModal('authModal');
+            loginUser(data.user);
+        } else {
+            showToast('error', 'Login Failed', data.error);
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        showToast('error', 'Login Error', 'An unexpected error occurred.');
+    }
+  }
+
+  async function handleRegistration(e) {
+    e.preventDefault();
+    const username = document.getElementById('registerUsername').value;
+    const password = document.getElementById('registerPassword').value;
+    const role = document.getElementById('registerRole').value;
+    const wallet_address = document.getElementById('registerWalletAddress').value;
+
+    if(!wallet_address) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, role, wallet_address })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            showToast('success', 'Registration Successful', `Welcome, ${data.user.username}!`);
+            hideModal('authModal');
+            loginUser(data.user);
+        } else {
+            showToast('error', 'Registration Failed', data.error);
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        showToast('error', 'Registration Error', 'An unexpected error occurred.');
+    }
+  }
+
+  function loginUser(user) {
+    currentState.user = user;
+    currentState.role = user.role;
+    showMainApp();
+    document.getElementById('roleSwitcher').disabled = true;
+    document.getElementById('loginNavBtn').classList.add('hidden');
+    document.getElementById('registerNavBtn').classList.add('hidden');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(!logoutBtn) {
+        const nav = document.querySelector('nav .nav-user');
+        const newLogoutBtn = document.createElement('button');
+        newLogoutBtn.className = 'btn btn--outline';
+        newLogoutBtn.id = 'logoutBtn';
+        newLogoutBtn.textContent = 'Logout';
+        newLogoutBtn.addEventListener('click', logoutUser);
+        if(nav) nav.appendChild(newLogoutBtn);
+    }
+  }
+
+  function logoutUser() {
+    currentState.user = null;
+    currentState.role = 'farmer';
+    showLandingPage();
+    document.getElementById('roleSwitcher').disabled = false;
+    document.getElementById('loginNavBtn').classList.remove('hidden');
+    document.getElementById('registerNavBtn').classList.remove('hidden');
+    const logoutBtn = document.getElementById('logoutBtn');
+    if(logoutBtn) logoutBtn.remove();
+  }
+
   function setupEventListeners() {
     console.log('Setting up event listeners...');
     
@@ -570,7 +736,46 @@ const appData = {
     }
   }
   
+  window.viewCropDetails = async (cropId) => {
+    if (!contract) {
+        await connectWallet();
+        if (!contract) {
+            showToast('error', 'Wallet Error', 'Please connect wallet to view details.');
+            return;
+        }
+    }
+
+    try {
+        const batch = await contract.getBatch(cropId);
+        const ipfsData = JSON.parse(batch[2]);
+
+        const cropDetailsBody = document.getElementById('cropDetailsBody');
+        if (cropDetailsBody) {
+            cropDetailsBody.innerHTML = `
+                <h3>${ipfsData.type} - ${ipfsData.variety}</h3>
+                <div class="crop-details-grid">
+                    <div><strong>Harvest Date:</strong> ${formatDate(ipfsData.harvestDate)}</div>
+                    <div><strong>Quantity:</strong> ${ipfsData.quantity} kg</div>
+                    <div><strong>Grade:</strong> ${ipfsData.qualityGrade}</div>
+                    <div><strong>Price:</strong> ₹${ipfsData.price}/kg</div>
+                    <div><strong>Location:</strong> ${ipfsData.location}</div>
+                    <div><strong>Farmer:</strong> ${batch[1]}</div>
+                </div>
+                ${ipfsData.image ? `<img src="${ipfsData.image}" alt="Crop Image" class="crop-details-image">` : ''}
+            `;
+        }
+
+        showModal('cropDetailsModal');
+    } catch (error) {
+        console.error('Error fetching crop details:', error);
+        showToast('error', 'Blockchain Error', 'Could not fetch crop details.');
+    }
+  }
+
   function setupModalEvents() {
+    const closeCropDetailsModal = document.getElementById('closeCropDetailsModal');
+    if(closeCropDetailsModal) closeCropDetailsModal.addEventListener('click', () => hideModal('cropDetailsModal'));
+
     // Modal close events
     const modals = document.querySelectorAll('.modal');
     const modalCloses = document.querySelectorAll('.modal-close');
@@ -823,8 +1028,9 @@ const appData = {
         console.log(`Batch count: ${batchCount}`);
 
         const crops = [];
-        const signerAddress = await signer.getAddress();
-        console.log(`Signer address: ${signerAddress}`);
+        // Use the logged-in user's wallet address for filtering
+        const userWalletAddress = currentState.user ? currentState.user.wallet_address : null;
+        console.log(`User wallet address for filtering: ${userWalletAddress}`);
 
         for (let i = 1; i <= batchCount; i++) {
             try {
@@ -832,7 +1038,7 @@ const appData = {
                 const batch = await contract.getBatch(i);
                 console.log('Batch data:', batch);
                 
-                if (filterByFarmer && batch[1].toLowerCase() !== signerAddress.toLowerCase()) {
+                if (filterByFarmer && userWalletAddress && batch[1].toLowerCase() !== userWalletAddress.toLowerCase()) {
                     console.log(`Skipping batch ${i} as it does not belong to the current farmer.`);
                     continue;
                 }
@@ -912,6 +1118,9 @@ const appData = {
           <span class="status status--${crop.status.toLowerCase()}">${crop.status}</span>
           <button class="btn btn--sm btn--outline" onclick="viewQRCode('${crop.id}')">
             <i class="fas fa-qrcode"></i> QR Code
+          </button>
+          <button class="btn btn--sm btn--primary" onclick="viewCropDetails('${crop.id}')">
+            <i class="fas fa-info-circle"></i> View Details
           </button>
         </div>
       </div>
@@ -1296,6 +1505,18 @@ const appData = {
       price: document.getElementById('cropPrice').value,
       location: document.getElementById('cropLocation').value
     };
+
+    const imageFile = document.getElementById('cropImage').files[0];
+    let imageAsDataUrl = '';
+
+    if (imageFile) {
+        imageAsDataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(imageFile);
+        });
+    }
     
     // Validate required fields
     if (!formData.type || !formData.variety || !formData.harvestDate || !formData.quantity || !formData.price || !formData.location) {
@@ -1305,7 +1526,7 @@ const appData = {
     
     // In a real application, this data would be uploaded to IPFS.
     // For this demo, we'll store the JSON directly as the "ipfsHash".
-    const ipfsHash = JSON.stringify(formData);
+    const ipfsHash = JSON.stringify({ ...formData, image: imageAsDataUrl });
 
     try {
         const tx = await contract.registerBatch(ipfsHash);

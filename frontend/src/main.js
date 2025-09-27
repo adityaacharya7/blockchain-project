@@ -1188,8 +1188,39 @@ const appData = {
   function onScanSuccess(decodedText, decodedResult) {
     // handle the scanned code as you like, for example:
     console.log(`Code matched = ${decodedText}`, decodedResult);
-    showProductJourney(decodedText);
-    html5QrcodeScanner.clear();
+    let batchId;
+
+    const batchIdMatch = decodedText.match(/Batch ID: (\w+)/);
+    if (batchIdMatch && batchIdMatch[1]) {
+        batchId = batchIdMatch[1];
+    } else {
+        // Fallback for old QR codes (just batchId) or JSON
+        try {
+            const qrData = JSON.parse(decodedText);
+            if (qrData && qrData.batchId) {
+                batchId = qrData.batchId;
+            } else {
+                batchId = decodedText;
+            }
+        } catch (e) {
+            batchId = decodedText;
+        }
+    }
+
+    if (batchId) {
+        showProductJourney(batchId);
+    } else {
+        // If we still can't find a batchId, just display the text
+        const productJourney = document.getElementById('productJourney');
+        if (productJourney) {
+            productJourney.innerHTML = `<pre>${decodedText}</pre>`;
+            productJourney.classList.remove('hidden');
+            showToast('info', 'QR Scanned', 'Displaying scanned QR content.');
+        }
+    }
+    if(html5QrcodeScanner.getState() === 2) { // 2 === SCANNING
+        html5QrcodeScanner.clear();
+    }
   }
 
   function onScanFailure(error) {
@@ -1966,19 +1997,51 @@ const appData = {
   async function viewQRCode(cropId) {
     const qrCodeBody = document.getElementById('qrCodeBody');
     if (qrCodeBody) {
-        qrCodeBody.innerHTML = '';
+        qrCodeBody.innerHTML = '<p>Generating QR code...</p>';
         showModal('qrCodeModal');
 
         try {
-            // The QR code will simply contain the batch ID (cropId)
+            if (!provenanceContract) {
+                await connectWallet();
+                if (!provenanceContract) {
+                    showToast('error', 'Wallet Error', 'Please connect wallet to generate QR code.');
+                    qrCodeBody.innerHTML = '<p>Please connect wallet to generate QR code.</p>';
+                    return;
+                }
+            }
+
+            const batch = await provenanceContract.getBatch(cropId);
+            const [id, farmerAddress, ipfsDataString, custodians, timestamps] = batch;
+
+            if (!id || id.toString() === "0") {
+                showToast('error', 'Product Not Found', `Product with ID ${cropId} not found on the blockchain.`);
+                hideModal('qrCodeModal');
+                return;
+            }
+
+            const ipfsData = JSON.parse(ipfsDataString);
+
+            let qrCodeText = `Batch ID: ${id.toString()}\n`;
+            qrCodeText += `Farmer: ${farmerAddress}\n`;
+            Object.entries(ipfsData).forEach(([key, value]) => {
+                qrCodeText += `${key}: ${value}\n`;
+            });
+
+            qrCodeText += '\nOwnership History:\n';
+            custodians.forEach((custodian, i) => {
+                qrCodeText += `  - ${custodian} on ${new Date(Number(timestamps[i]) * 1000).toLocaleString()}\n`;
+            });
+
+
             const qr = qrcode(0, 'M');
-            qr.addData(cropId.toString());
+            qr.addData(qrCodeText);
             qr.make();
+
             qrCodeBody.innerHTML = `
-                <p>Scan this QR code with a generic QR scanner app or the consumer portal.</p>
-                <p>It contains the Product ID: <strong>${cropId}</strong></p>
+                <p>Scan this QR code to view all batch details.</p>
+                <p>Product ID: <strong>${cropId}</strong></p>
             `;
-            qrCodeBody.innerHTML += qr.createImgTag(6, 20);
+            qrCodeBody.innerHTML += qr.createImgTag(4, 10);
 
         } catch (error) {
             console.error('Error generating QR code:', error);

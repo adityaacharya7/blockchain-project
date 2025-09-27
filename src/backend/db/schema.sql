@@ -4,9 +4,18 @@ CREATE TABLE users (
     username VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL, -- e.g., 'farmer', 'distributor', 'retailer'
-    wallet_address VARCHAR(255) UNIQUE, -- Store user's wallet address
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    wallet_address VARCHAR(42) UNIQUE, -- Ethereum wallet address
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE purchase_requests (
+    id SERIAL PRIMARY KEY,
+    batch_id INTEGER NOT NULL,
+    retailer_wallet_address VARCHAR(42) NOT NULL,
+    distributor_wallet_address VARCHAR(42) NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'pending', -- e.g., 'pending', 'completed', 'rejected'
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE batches (

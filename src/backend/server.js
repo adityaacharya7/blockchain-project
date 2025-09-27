@@ -100,7 +100,7 @@ app.post('/users', async (req, res) => {
 // GET /users - Get all users
 app.get('/users', async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY created_at DESC');
+        const result = await pool.query('SELECT id, username, role, created_at, wallet_address FROM users ORDER BY created_at DESC');
         res.json({ users: result.rows });
     } catch (error) {
         console.error('Error fetching users:', error);
@@ -139,10 +139,69 @@ app.post('/login', async (req, res) => {
         }
 
         console.log(`Login successful for username: ${username}`);
-        res.json({ message: 'Login successful', user: { id: user.id, username: user.username, role: user.role } });
+        res.json({ message: 'Login successful', user: { id: user.id, username: user.username, role: user.role, wallet_address: user.wallet_address } });
     } catch (error) {
         console.error('Error logging in user:', error);
         res.status(500).json({ error: 'Failed to log in' });
+    }
+});
+
+// POST /purchase-requests - Create a new purchase request
+app.post('/purchase-requests', async (req, res) => {
+    const { batchId, retailerWalletAddress, distributorWalletAddress } = req.body;
+
+    if (!batchId || !retailerWalletAddress || !distributorWalletAddress) {
+        return res.status(400).json({ error: 'batchId, retailerWalletAddress, and distributorWalletAddress are required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'INSERT INTO purchase_requests (batch_id, retailer_wallet_address, distributor_wallet_address, status) VALUES ($1, $2, $3, $4) RETURNING *',
+            [batchId, retailerWalletAddress, distributorWalletAddress, 'pending']
+        );
+        res.status(201).json({ message: 'Purchase request created successfully', request: result.rows[0] });
+    } catch (error) {
+        console.error('Error creating purchase request:', error);
+        res.status(500).json({ error: 'Failed to create purchase request' });
+    }
+});
+
+// GET /purchase-requests/:distributor_address - Get all pending requests for a distributor
+app.get('/purchase-requests/:distributor_address', async (req, res) => {
+    const { distributor_address } = req.params;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM purchase_requests WHERE distributor_wallet_address = $1 AND status = $2 ORDER BY created_at DESC',
+            [distributor_address, 'pending']
+        );
+        res.json({ requests: result.rows });
+    } catch (error) {
+        console.error('Error fetching purchase requests:', error);
+        res.status(500).json({ error: 'Failed to fetch purchase requests' });
+    }
+});
+
+// PUT /purchase-requests/:id - Update a purchase request's status
+app.put('/purchase-requests/:id', async (req, res) => {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({ error: 'Status is required' });
+    }
+
+    try {
+        const result = await pool.query(
+            'UPDATE purchase_requests SET status = $1 WHERE id = $2 RETURNING *',
+            [status, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Purchase request not found' });
+        }
+        res.json({ message: 'Purchase request updated successfully', request: result.rows[0] });
+    } catch (error) {
+        console.error('Error updating purchase request:', error);
+        res.status(500).json({ error: 'Failed to update purchase request' });
     }
 });
 

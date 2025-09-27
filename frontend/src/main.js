@@ -1054,12 +1054,105 @@ const appData = {
       `).join('');
     }
 
-    
+    loadPurchaseRequests(); // Load incoming purchase requests
     
     // Load success rate chart
     setTimeout(() => {
       loadDistributorChart();
     }, 100);
+  }
+
+  async function loadPurchaseRequests() {
+    const requestsContainer = document.getElementById('purchaseRequests');
+    if (!requestsContainer) return;
+
+    if (!currentState.user || currentState.user.role !== 'distributor') {
+        requestsContainer.innerHTML = ''; // Not a distributor or not logged in, so clear the section
+        return;
+    }
+
+    if (!signer) {
+        await connectWallet();
+        if (!signer) {
+            requestsContainer.innerHTML = '<p>Please connect your wallet to view purchase requests.</p>';
+            return;
+        }
+    }
+
+    requestsContainer.innerHTML = '<p>Loading incoming purchase requests...</p>';
+    const distributorAddress = await signer.getAddress();
+
+    try {
+        const response = await fetch(`http://localhost:3000/purchase-requests/${distributorAddress}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch requests.');
+        }
+
+        if (data.requests.length === 0) {
+            requestsContainer.innerHTML = '<p>You have no pending purchase requests.</p>';
+            return;
+        }
+
+        let requestsHTML = '';
+        for (const req of data.requests) {
+            requestsHTML += `
+                <div class="request-card">
+                    <p><strong>Request ID:</strong> ${req.id}</p>
+                    <p><strong>Batch ID:</strong> ${req.batch_id}</p>
+                    <p><strong>From Retailer:</strong></p>
+                    <code>${req.retailer_wallet_address}</code>
+                    <p><strong>Status:</strong> <span class="status status--pending">${req.status}</span></p>
+                    <button class="btn btn--primary btn--sm" onclick="handleApproveTransfer(${req.id}, ${req.batch_id}, '${req.retailer_wallet_address}')">
+                        <i class="fas fa-check"></i> Approve & Transfer
+                    </button>
+                </div>
+            `;
+        }
+        requestsContainer.innerHTML = requestsHTML;
+
+    } catch (error) {
+        console.error('Error loading purchase requests:', error);
+        requestsContainer.innerHTML = `<p>Error loading requests: ${error.message}</p>`;
+    }
+  }
+
+  async function handleApproveTransfer(requestId, batchId, retailerAddress) {
+    if (!provenanceContract || !signer) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first.');
+        return;
+    }
+
+    showToast('info', 'Processing Transfer', `Initiating transfer of batch ${batchId} to retailer...`);
+
+    try {
+        // 1. Execute the blockchain transaction
+        const tx = await provenanceContract.transferOwnership(batchId, retailerAddress);
+        await tx.wait();
+        showToast('success', 'Transfer Complete', `Batch ${batchId} successfully transferred to ${retailerAddress.substring(0, 8)}...`);
+
+        // 2. Update the status in the backend database
+        const response = await fetch(`http://localhost:3000/purchase-requests/${requestId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'completed' })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update request status in DB.');
+        }
+
+        showToast('info', 'Status Updated', 'Request status updated in database.');
+
+        // 3. Refresh the list of requests
+        loadPurchaseRequests();
+
+    } catch (error) {
+        console.error('Error during transfer approval:', error);
+        showToast('error', 'Transfer Failed', error.message);
+    }
   }
   
   function loadDistributorChart() {
@@ -1121,6 +1214,7 @@ const appData = {
   async function loadRetailerDashboard() {
     console.log('Loading retailer dashboard with verification system...');
     setupQrScanner();
+    loadRetailerMarketplace(); // Load the new marketplace
     
     // Load inventory alerts
     const retailerAlerts = document.getElementById('retailerAlerts');
@@ -1128,7 +1222,7 @@ const appData = {
         const crops = await loadOnChainCrops(false); // Show all crops
         const alerts = crops.slice(0, 3).map(crop => ({
             type: 'info',
-            title: 'New Batch Available',
+            title: 'New Batch Registered',
             desc: `${crop.type} - ${crop.quantity}`,
             time: `${formatDate(crop.harvestDate)}`
         }));
@@ -1136,7 +1230,7 @@ const appData = {
       retailerAlerts.innerHTML = alerts.map(alert => `
         <div class="alert-item">
           <div class="alert-icon ${alert.type}">
-            ${alert.type === 'warning' ? '⚠️' : alert.type === 'info' ? 'ℹ️' : '✅'}
+            ${alert.type === 'info' ? 'ℹ️' : '✅'}
           </div>
           <div class="alert-content">
             <div class="alert-title">${alert.title}</div>
@@ -1151,6 +1245,120 @@ const appData = {
     setTimeout(() => {
       loadRetailerChart();
     }, 100);
+  }
+
+  async function loadRetailerMarketplace() {
+    const marketplaceContainer = document.getElementById('retailerMarketplace');
+    if (!marketplaceContainer) return;
+
+    marketplaceContainer.innerHTML = '<p>Loading available batches from distributors...</p>';
+
+    if (!provenanceContract || !signer) {
+        await connectWallet();
+        if (!provenanceContract || !signer) {
+            marketplaceContainer.innerHTML = '<p>Please connect your wallet to view the marketplace.</p>';
+            return;
+        }
+    }
+
+    try {
+        // 1. Get all users with the 'distributor' role
+        const usersResponse = await fetch('http://localhost:3000/users');
+        const usersData = await usersResponse.json();
+        if (!usersResponse.ok) throw new Error('Could not fetch users.');
+        
+        const distributorAddresses = usersData.users
+            .filter(user => user.role === 'distributor' && user.wallet_address)
+            .map(user => user.wallet_address.toLowerCase());
+
+        console.log("DEBUG: Registered Distributor Wallets:", distributorAddresses);
+
+        // 2. Iterate through all batches and find ones owned by distributors
+        const batchCount = await provenanceContract.batchCount();
+        let availableBatchesHTML = '';
+        
+        for (let i = 1; i <= batchCount; i++) {
+            const batch = await provenanceContract.getBatch(i);
+            const owner = batch[3][batch[3].length - 1].toLowerCase();
+
+            console.log(`DEBUG: Checking Batch ${i}. Current Owner: ${owner}`);
+
+            if (distributorAddresses.includes(owner)) {
+                console.log(`DEBUG: Match found for Batch ${i}! Owner is a distributor.`);
+                const ipfsData = JSON.parse(batch[2]);
+                availableBatchesHTML += `
+                    <div class="crop-card">
+                        <div class="crop-card-header">
+                            <h4>${ipfsData.type}</h4>
+                            <div class="crop-variety">Batch ID: ${i}</div>
+                        </div>
+                        <div class="crop-card-body">
+                            <p><strong>Quantity:</strong> ${ipfsData.quantity} kg</p>
+                            <p><strong>Owner (Distributor):</strong></p>
+                            <code>${owner}</code>
+                        </div>
+                        <div class="crop-card-footer">
+                            <button class="btn btn--sm btn--outline" onclick="showProductJourney('${i}')">
+                                <i class="fas fa-route"></i> View Provenance
+                            </button>
+                            <button class="btn btn--sm btn--primary" onclick="handleRequestPurchase('${i}', '${owner}')">
+                                <i class="fas fa-paper-plane"></i> Request to Purchase
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        if (availableBatchesHTML === '') {
+            marketplaceContainer.innerHTML = '<p>No batches are currently available from distributors.</p>';
+        } else {
+            marketplaceContainer.innerHTML = availableBatchesHTML;
+        }
+
+    } catch (error) {
+        console.error('Error loading retailer marketplace:', error);
+        marketplaceContainer.innerHTML = '<p>Error loading marketplace. See console for details.</p>';
+    }
+  }
+
+  async function handleRequestPurchase(batchId, distributorWalletAddress) {
+    if (!signer) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first.');
+        return;
+    }
+    if (!currentState.user || currentState.user.role !== 'retailer') {
+        showToast('error', 'Role Error', 'You must be logged in as a Retailer to make a request.');
+        return;
+    }
+
+    const retailerWalletAddress = currentState.user.wallet_address;
+    showToast('info', 'Sending Request', `Sending purchase request for batch ${batchId}...`);
+
+    try {
+        const response = await fetch('http://localhost:3000/purchase-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                batchId: parseInt(batchId),
+                retailerWalletAddress,
+                distributorWalletAddress
+            })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to create request.');
+        }
+
+        showToast('success', 'Request Sent', `Your request for batch ${batchId} has been sent to the distributor.`);
+        // Disable the button after a successful request by refreshing
+        loadRetailerMarketplace();
+
+    } catch (error) {
+        console.error('Error requesting purchase:', error);
+        showToast('error', 'Request Failed', error.message);
+    }
   }
   
   function loadRetailerChart() {
@@ -1626,158 +1834,156 @@ const appData = {
   }
   
   // QR and Product Journey
-  function simulateQRScan() {
-    const randomCrop = appData.crops[Math.floor(Math.random() * appData.crops.length)];
-    showToast('info', 'QR Scanned', `Scanning product ${randomCrop.id}...`);
-    
-    setTimeout(() => {
-      showProductJourney(randomCrop.id);
-      showToast('success', 'Product Verified', `${randomCrop.type} verified as authentic!`);
-    }, 1500);
+  async function simulateQRScan() {
+    if (!provenanceContract) {
+        await connectWallet();
+        if (!provenanceContract) {
+            showToast('error', 'Wallet Error', 'Please connect wallet to simulate scan.');
+            return;
+        }
+    }
+    try {
+        const batchCount = await provenanceContract.batchCount();
+        if (batchCount === 0) {
+            showToast('warning', 'No Products', 'There are no products registered on the blockchain to scan.');
+            return;
+        }
+        const randomBatchId = Math.floor(Math.random() * Number(batchCount)) + 1;
+        showToast('info', 'QR Scanned', `Simulating scan for product ID ${randomBatchId}...`);
+        
+        setTimeout(() => {
+            showProductJourney(randomBatchId.toString());
+        }, 1000);
+
+    } catch (error) {
+        console.error('Error simulating scan:', error);
+        showToast('error', 'Blockchain Error', 'Could not get batch count from blockchain.');
+    }
   }
   
-  function showProductJourney(cropId) {
-    console.log('Showing product journey for:', cropId);
-    const crop = appData.crops.find(c => c.id === cropId);
-    if (!crop) {
-      showToast('error', 'Product Not Found', 'The specified product could not be found in our system');
-      return;
+  async function showProductJourney(batchId) {
+    console.log('Showing product journey for batch ID:', batchId);
+
+    if (!provenanceContract) {
+        await connectWallet();
+        if (!provenanceContract) {
+            showToast('error', 'Wallet Error', 'Please connect wallet to view product journey.');
+            return;
+        }
     }
-  
-    const farmer = appData.farmers.find(f => f.id === crop.farmerId);
+
     const productJourney = document.getElementById('productJourney');
-    
-    if (productJourney) {
-      productJourney.innerHTML = `
-        <div class="journey-header">
-          <h2><i class="fas fa-route"></i> Product Journey</h2>
-          <p>${crop.type} - ${crop.variety}</p>
-          <div style="margin-top: 12px;">
-            <span class="status status--${crop.status.toLowerCase()}">${crop.status}</span>
-          </div>
-        </div>
-        
-        <div class="journey-stages">
-          <div class="journey-stage">
-            <div class="stage-icon" style="background: #10B981;">
-              <i class="fas fa-seedling"></i>
-            </div>
-            <h4>Farm</h4>
-            <p>Origin Verified</p>
-          </div>
-          <div class="journey-stage">
-            <div class="stage-icon" style="background: #3B82F6;">
-              <i class="fas fa-truck"></i>
-            </div>
-            <h4>Distribution</h4>
-            <p>In Transit</p>
-          </div>
-          <div class="journey-stage">
-            <div class="stage-icon" style="background: #F59E0B;">
-              <i class="fas fa-store"></i>
-            </div>
-            <h4>Retail</h4>
-            <p>Quality Verified</p>
-          </div>
-          <div class="journey-stage">
-            <div class="stage-icon" style="background: #8B5CF6;">
-              <i class="fas fa-shopping-cart"></i>
-            </div>
-            <h4>Consumer</h4>
-            <p>Ready for Purchase</p>
-          </div>
-        </div>
-        
-        <div class="journey-details">
-          <div class="detail-card">
-            <h4><i class="fas fa-tractor"></i> Farm Details</h4>
-            <p><strong>Farmer:</strong> ${farmer ? farmer.name : 'Unknown'}</p>
-            <p><strong>Location:</strong> ${farmer ? farmer.location : 'Unknown'}</p>
-            <p><strong>Certification:</strong> ${farmer ? farmer.certification : 'Unknown'}</p>
-            <p><strong>Established:</strong> ${farmer ? farmer.established : 'Unknown'}</p>
-          </div>
-          
-          <div class="detail-card">
-            <h4><i class="fas fa-leaf"></i> Product Details</h4>
-            <p><strong>Type:</strong> ${crop.type}</p>
-            <p><strong>Variety:</strong> ${crop.variety}</p>
-            <p><strong>Harvest Date:</strong> ${formatDate(crop.harvestDate)}</p>
-            <p><strong>Quality Grade:</strong> ${crop.qualityGrade}</p>
-            <p><strong>Quantity:</strong> ${crop.quantity}</p>
-          </div>
-          
-          <div class="detail-card">
-            <h4><i class="fas fa-link"></i> Blockchain Verification</h4>
-            <p><strong>Product ID:</strong> ${crop.id}</p>
-            <p><strong>Blockchain Hash:</strong></p>
-            <code style="font-size: 10px; word-break: break-all;">${crop.blockchainHash}</code>
-            <p><strong>IPFS Hash:</strong> ${crop.ipfsHash}</p>
-            <p><strong>Certifications:</strong> ${crop.certifications ? crop.certifications.join(', ') : 'N/A'}</p>
-          </div>
-          
-          <div class="detail-card">
-            <h4><i class="fas fa-history"></i> Transaction History</h4>
-            ${appData.blockchainEvents
-              .filter(event => event.cropId === cropId)
-              .map(event => `
+    if (!productJourney) return;
+
+    productJourney.innerHTML = '<p>Fetching product details from the blockchain...</p>';
+    productJourney.classList.remove('hidden');
+
+    try {
+        const batch = await provenanceContract.getBatch(batchId);
+        const [id, farmerAddress, ipfsDataString, custodians, timestamps] = batch;
+
+        if (!id || id.toString() === "0") {
+            showToast('error', 'Product Not Found', `Product with ID ${batchId} not found on the blockchain.`);
+            productJourney.classList.add('hidden');
+            return;
+        }
+
+        const ipfsData = JSON.parse(ipfsDataString);
+
+        // Build the journey stages
+        let journeyStagesHTML = `
+            <div class="journey-stage">
+                <div class="stage-icon" style="background: #10B981;"><i class="fas fa-seedling"></i></div>
+                <h4>Farm</h4><p>Origin Verified</p>
+            </div>`;
+        if (custodians.length > 1) {
+            journeyStagesHTML += `
+            <div class="journey-stage">
+                <div class="stage-icon" style="background: #3B82F6;"><i class="fas fa-truck"></i></div>
+                <h4>Distribution</h4><p>In Transit</p>
+            </div>`;
+        }
+        // Add more stages as needed based on custodian roles if available
+
+        // Build the transaction history
+        let historyHTML = '';
+        for (let i = 0; i < custodians.length; i++) {
+            historyHTML += `
                 <div style="margin-bottom: 12px; padding: 8px; background: var(--color-bg-3); border-radius: 6px;">
-                  <p style="margin: 0;"><strong>${event.type}</strong> ${event.icon}</p>
+                  <p style="margin: 0;"><strong>${i === 0 ? 'Batch Registered' : 'Ownership Transferred'}</strong></p>
                   <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">
-                    ${formatDate(event.timestamp)} | Block: ${event.blockNumber}
+                    To: ${custodians[i]}
                   </p>
-                  <code style="font-size: 10px;">${event.txHash}</code>
+                  <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">
+                    On: ${formatDate(new Date(Number(timestamps[i]) * 1000))}
+                  </p>
                 </div>
-              `).join('')}
-          </div>
-        </div>
-      `;
-      
-      productJourney.classList.remove('hidden');
-      console.log('Product journey displayed for crop:', cropId);
+            `;
+        }
+
+        productJourney.innerHTML = `
+            <div class="journey-header">
+              <h2><i class="fas fa-route"></i> Product Journey</h2>
+              <p>${ipfsData.type} - ${ipfsData.variety}</p>
+            </div>
+            <div class="journey-stages">${journeyStagesHTML}</div>
+            <div class="journey-details">
+              <div class="detail-card">
+                <h4><i class="fas fa-tractor"></i> Farm Details</h4>
+                <p><strong>Original Farmer:</strong></p>
+                <code>${farmerAddress}</code>
+                <p><strong>Location:</strong> ${ipfsData.location}</p>
+              </div>
+              <div class="detail-card">
+                <h4><i class="fas fa-leaf"></i> Product Details</h4>
+                <p><strong>Type:</strong> ${ipfsData.type}</p>
+                <p><strong>Variety:</strong> ${ipfsData.variety}</p>
+                <p><strong>Harvest Date:</strong> ${formatDate(ipfsData.harvestDate)}</p>
+                <p><strong>Quality Grade:</strong> ${ipfsData.qualityGrade}</p>
+                <p><strong>Quantity:</strong> ${ipfsData.quantity} kg</p>
+              </div>
+              <div class="detail-card">
+                <h4><i class="fas fa-link"></i> Blockchain Verification</h4>
+                <p><strong>Product ID (Batch ID):</strong> ${id.toString()}</p>
+                <p><strong>IPFS Data:</strong></p>
+                <pre style="font-size: 10px; word-break: break-all; white-space: pre-wrap;">${JSON.stringify(ipfsData, null, 2)}</pre>
+              </div>
+              <div class="detail-card">
+                <h4><i class="fas fa-history"></i> Ownership History</h4>
+                ${historyHTML}
+              </div>
+            </div>
+        `;
+        showToast('success', 'Product Verified', `${ipfsData.type} verified as authentic!`);
+
+    } catch (error) {
+        console.error('Error fetching product journey:', error);
+        showToast('error', 'Blockchain Error', 'Could not fetch product details. Is the Batch ID correct?');
+        productJourney.innerHTML = `<p style="color: red;">Error fetching data. See console.</p>`;
     }
   }
   
   async function viewQRCode(cropId) {
     const qrCodeBody = document.getElementById('qrCodeBody');
     if (qrCodeBody) {
-        qrCodeBody.innerHTML = '<p>Loading QR Code...</p>';
+        qrCodeBody.innerHTML = '';
         showModal('qrCodeModal');
 
         try {
-            if (!provenanceContract) {
-                await connectWallet();
-                if (!provenanceContract) {
-                    showToast('error', 'Wallet Error', 'Please connect wallet to generate QR code.');
-                    qrCodeBody.innerHTML = '<p>Error: Wallet not connected.</p>';
-                    return;
-                }
-            }
-
-            const batch = await provenanceContract.getBatch(cropId);
-            const ipfsData = JSON.parse(batch[2]);
-
-            const details = [
-                `Product ID: ${cropId}`,
-                `Type: ${ipfsData.type}`,
-                `Variety: ${ipfsData.variety}`,
-                `Harvest Date: ${formatDate(ipfsData.harvestDate)}`,
-                `Quantity: ${ipfsData.quantity} kg`,
-                `Grade: ${ipfsData.qualityGrade}`,
-                `Price: ₹${ipfsData.price}/kg`,
-                `Location: ${ipfsData.location}`,
-                `Farmer: ${batch[1]}`
-            ].join('\n');
-
-            qrCodeBody.innerHTML = '';
+            // The QR code will simply contain the batch ID (cropId)
             const qr = qrcode(0, 'M');
-            qr.addData(details);
+            qr.addData(cropId.toString());
             qr.make();
-            qrCodeBody.innerHTML = qr.createImgTag(4, 16);
+            qrCodeBody.innerHTML = `
+                <p>Scan this QR code with a generic QR scanner app or the consumer portal.</p>
+                <p>It contains the Product ID: <strong>${cropId}</strong></p>
+            `;
+            qrCodeBody.innerHTML += qr.createImgTag(6, 20);
 
         } catch (error) {
             console.error('Error generating QR code:', error);
-            showToast('error', 'Blockchain Error', 'Could not generate QR code.');
-            qrCodeBody.innerHTML = '<p>Error generating QR code. See console for details.</p>';
+            showToast('error', 'QR Error', 'Could not generate QR code.');
+            qrCodeBody.innerHTML = '<p>Error generating QR code.</p>';
         }
     }
   }
@@ -2272,8 +2478,10 @@ const appData = {
   
   
   // Global functions for onclick handlers
-  window.showBidModal = showBidModal;
   window.viewQRCode = viewQRCode;
+  window.showBidModal = showBidModal;
+  window.handleRequestPurchase = handleRequestPurchase;
+  window.handleApproveTransfer = handleApproveTransfer;
   window.hideToast = hideToast;
   
   console.log('AgriTrace: Advanced blockchain agricultural traceability system loaded successfully! 🌾🔗');

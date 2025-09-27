@@ -345,6 +345,13 @@
                     </div>
                 </div>
 
+                <div class="requests-section">
+                    <h3>Incoming Purchase Requests</h3>
+                    <div class="requests-grid" id="purchaseRequests">
+                        <!-- Requests will be loaded here by JavaScript -->
+                    </div>
+                </div>
+
                 
             </div>
 
@@ -410,6 +417,13 @@
                         <div class="alerts-list" id="retailerAlerts"></div>
                     </div>
                 </div>
+
+                <div class="marketplace-section">
+                    <h3>Available from Distributors</h3>
+                    <div class="batches-grid" id="retailerMarketplace">
+                        <!-- Batches will be loaded here by JavaScript -->
+                    </div>
+                </div>
             </div>
 
             <!-- Consumer Dashboard -->
@@ -470,9 +484,9 @@
                     </div>
                     
                     <div class="product-search">
-                        <h3>Or Search by Product ID</h3>
+                        <h3>Or Search by Batch ID</h3>
                         <div class="search-input">
-                            <input type="text" class="form-control" id="productIdInput" placeholder="Enter product ID (e.g., crop_001)">
+                            <input type="text" class="form-control" id="productIdInput" placeholder="Enter batch ID (e.g., 1)">
                             <button class="btn btn--primary" id="searchProductBtn">
                                 <i class="fas fa-search"></i> Search
                             </button>

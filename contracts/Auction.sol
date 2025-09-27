@@ -80,7 +80,11 @@ contract Auction {
             provenance.transferOwnership(_batchId, auction.highestBidder);
 
             // Send the highest bid to the seller
-            auction.seller.transfer(auction.highestBid);
+            // auction.seller.transfer(auction.highestBid);
+
+            // Fetch the farmer's address from the Provenance contract and send them the bid
+            (, address farmer, , , ) = provenance.getBatch(_batchId);
+            payable(farmer).transfer(auction.highestBid);
 
             emit AuctionEnded(_batchId, auction.highestBidder, auction.highestBid);
         } else {

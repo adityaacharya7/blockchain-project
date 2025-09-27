@@ -860,6 +860,7 @@ const appData = {
   
     // Load farmer crops
     loadFarmerCrops();
+    loadFarmerAuctions();
     
     // Load earnings chart with delay to ensure canvas is ready
     setTimeout(() => {
@@ -1053,8 +1054,7 @@ const appData = {
       `).join('');
     }
 
-    // Load active auctions
-    loadActiveAuctions();
+    
     
     // Load success rate chart
     setTimeout(() => {
@@ -1376,7 +1376,90 @@ const appData = {
     }
   }
 
+  
+    async function loadFarmerAuctions() {
+    const farmerAuctionsContainer = document.getElementById('farmerAuctions');
+    if (!farmerAuctionsContainer) return;
+
+    farmerAuctionsContainer.innerHTML = 'Loading your auctions...';
+
+    if (!auctionContract || !provenanceContract || !signer) {
+        await connectWallet();
+        if (!auctionContract || !provenanceContract || !signer) {
+            farmerAuctionsContainer.innerHTML = '<p>Please connect your wallet to view your auctions.</p>';
+            return;
+        }
+    }
+
+    try {
+        const batchCount = await provenanceContract.batchCount();
+        const currentUserAddress = await signer.getAddress();
+        let auctionsHtml = '';
+        const currentTime = Math.floor(Date.now() / 1000);
+
+        for (let i = 1; i <= batchCount; i++) {
+            try {
+                const auction = await auctionContract.auctions(i);
+                if (auction.started && !auction.ended && auction.seller.toLowerCase() === currentUserAddress.toLowerCase()) {
+                    const isEnded = currentTime >= auction.endTime;
+                    auctionsHtml += `
+                        <div class="auction-card">
+                            <div class="auction-card-header">
+                                <h4>Batch ID: ${auction.batchId.toString()}</h4>
+                            </div>
+                            <div class="auction-card-body">
+                                <p><strong>Highest Bid:</strong> ${ethers.formatEther(auction.highestBid)} ETH</p>
+                                <p><strong>Highest Bidder:</strong> ${auction.highestBidder}</p>
+                                <p><strong>End Time:</strong> ${new Date(Number(auction.endTime) * 1000).toLocaleString()}</p>
+                            </div>
+                            <div class="auction-card-footer">
+                                ${isEnded
+                                    ? `<button class="btn btn--primary" onclick="handleEndAuction(${auction.batchId.toString()})">End Auction</button>`
+                                    : `<button class="btn btn--disabled" disabled>Auction in Progress</button>`
+                                }
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                // This batch is not an auction, so we can safely ignore the error.
+            }
+        }
+
+        if (auctionsHtml === '') {
+            farmerAuctionsContainer.innerHTML = '<p>You have no active auctions.</p>';
+        } else {
+            farmerAuctionsContainer.innerHTML = auctionsHtml;
+        }
+    } catch (error) {
+        console.error('Error loading farmer auctions:', error);
+        farmerAuctionsContainer.innerHTML = '<p>Error loading auctions. See console for details.</p>';
+    }
+  }
+
+
+  window.handleEndAuction = async (batchId) => {
+    if (!auctionContract) {
+        showToast('error', 'Wallet Error', 'Please connect your wallet first.');
+        await connectWallet();
+        if(!auctionContract) return;
+    }
+
+    showToast('info', 'Ending Auction', `Sending transaction to end auction for batch ${batchId}...`);
+
+    try {
+        const tx = await auctionContract.endAuction(batchId);
+        await tx.wait();
+        showToast('success', 'Auction Ended', `Auction for batch ${batchId} has been successfully ended.`);
+        loadFarmerAuctions(); // Refresh the auctions list
+    } catch (error) {
+        console.error('Error ending auction:', error);
+        showToast('error', 'Blockchain Error', `Error: ${error.message}`);
+    }
+  };
+
   async function handleCreateAuction(e) {
+
     e.preventDefault();
     const batchId = document.getElementById('auctionBatchId').value;
     const startingPrice = document.getElementById('startingPrice').value;
@@ -1418,7 +1501,7 @@ const appData = {
         
         hideModal('createAuctionModal');
         document.getElementById('createAuctionForm').reset();
-        loadActiveAuctions(); // Refresh the auction list
+        loadFarmerAuctions(); // Refresh the auction list
         
         showToast('success', 'Auction Created', `Auction for batch ${batchId} created successfully!`);
 
@@ -1521,7 +1604,7 @@ const appData = {
         
         hideModal('bidModal');
         document.getElementById('bidForm').reset();
-        loadActiveAuctions(); // Refresh the auction list
+        loadFarmerAuctions(); // Refresh the auction list
         
         showToast('success', 'Bid Placed', `Your bid of ${bidAmount} ETH has been placed successfully!`);
 

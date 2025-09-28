@@ -276,6 +276,7 @@ const appData = {
   
   function setupAuthEventListeners() {
     const loginNavBtn = document.getElementById('loginNavBtn');
+    const loginHeroBtn = document.getElementById('loginHeroBtn');
     const registerNavBtn = document.getElementById('registerNavBtn');
     const closeAuthModal = document.getElementById('closeAuthModal');
     const authModal = document.getElementById('authModal');
@@ -286,6 +287,7 @@ const appData = {
     const connectWalletBtn = document.getElementById('connectWalletBtn');
 
     if(loginNavBtn) loginNavBtn.addEventListener('click', () => showAuthModal('login'));
+    if(loginHeroBtn) loginHeroBtn.addEventListener('click', () => showAuthModal('login'));
     if(registerNavBtn) registerNavBtn.addEventListener('click', () => showAuthModal('register'));
     if(closeAuthModal) closeAuthModal.addEventListener('click', () => hideModal('authModal'));
     if(authModal) authModal.addEventListener('click', (e) => {
@@ -755,8 +757,7 @@ const appData = {
       distributor: { displayName: '🚚 Distributor', userName: 'AgriConnect Distribution Hub' },
       retailer: { displayName: '🏬 Retailer', userName: 'FreshMart Supermarket Chain' },
       consumer: { displayName: '🛒 Consumer', userName: 'Rajesh Sharma' },
-      admin: { displayName: '⚙️ Admin', userName: 'System Administrator' },
-      provenance: { displayName: '🔧 Provenance', userName: 'dApp User' }
+      admin: { displayName: '⚙️ Admin', userName: 'System Administrator' }
     };
     return roles[role] || roles.farmer;
   }

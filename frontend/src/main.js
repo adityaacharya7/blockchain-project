@@ -841,10 +841,10 @@ const appData = {
     const farmerActivity = document.getElementById('farmerActivity');
     if (farmerActivity) {
       const activities = [
-        { icon: '🌾', title: 'New crop registered', desc: 'Organic Tomatoes - 800kg', time: '2 hours ago' },
-        { icon: '💰', title: 'Payment received', desc: '₹1,20,000 from AgriConnect', time: '1 day ago' },
-        { icon: '📋', title: 'New bid received', desc: '₹84/kg for Basmati Rice', time: '3 hours ago' },
-        { icon: '🚚', title: 'Delivery confirmed', desc: 'Premium Apples delivered', time: '2 days ago' }
+        { icon: '🌱', title: 'New Crop Added', desc: 'Organic Tomatoes - 800kg', time: '2 hours ago' },
+        { icon: '✅', title: 'Payment Cleared', desc: '₹1,20,000 from AgriConnect', time: '1 day ago' },
+        { icon: '👋', title: 'New Interest!', desc: '₹84/kg for Basmati Rice', time: '3 hours ago' },
+        { icon: '👍', title: 'Shipment Complete', desc: 'Premium Apples delivered', time: '2 days ago' }
       ];
   
       farmerActivity.innerHTML = activities.map(activity => `
@@ -995,6 +995,10 @@ const appData = {
     if (!ctx || currentState.charts.farmerEarnings) return;
   
     try {
+        const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.4)');
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
       currentState.charts.farmerEarnings = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1003,9 +1007,14 @@ const appData = {
             label: 'Monthly Earnings (₹)',
             data: appData.charts.farmerEarnings.data,
             borderColor: '#10B981',
-            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            backgroundColor: gradient,
             fill: true,
-            tension: 0.4
+            tension: 0.4,
+            pointBackgroundColor: '#10B981',
+            pointBorderColor: '#fff',
+            pointHoverRadius: 7,
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#10B981'
           }]
         },
         options: {
@@ -1014,6 +1023,20 @@ const appData = {
           plugins: {
             legend: {
               display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(context.parsed.y);
+                        }
+                        return label;
+                    }
+                }
             }
           },
           scales: {

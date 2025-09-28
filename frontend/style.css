@@ -1239,6 +1239,13 @@ blockquote footer {
   margin-bottom: var(--space-32);
 }
 
+.analytics-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-20);
+  margin-top: var(--space-32);
+}
+
 .chart-container {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -1999,6 +2006,61 @@ blockquote footer {
   box-shadow: var(--shadow-sm);
   transition: border-color var(--duration-fast) ease-in-out;
 }
+
+/* Transaction Table Styles */
+.table-container {
+  overflow-x: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.transaction-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-16);
+}
+
+.transaction-table th,
+.transaction-table td {
+  padding: var(--space-12) var(--space-16);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.transaction-table thead th {
+  background-color: var(--color-bg-3);
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  font-size: var(--font-size-sm);
+}
+
+.transaction-table tbody tr:hover {
+  background-color: var(--color-secondary);
+}
+
+.transaction-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Transaction Status Styles */
+.status-completed {
+  color: green;
+  font-weight: bold;
+}
+
+.status-pending {
+  color: orange;
+  font-weight: bold;
+}
+
+.status-failed {
+  color: red;
+  font-weight: bold;
+}
+
 
 #provenanceDashboard input[type="text"]:focus,
 #provenanceDashboard input[type="number"]:focus,

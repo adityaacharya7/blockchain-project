@@ -781,6 +781,17 @@ const appData = {
         showDashboard('provenance');
     } else {
         showDashboard(currentState.role);
+        if (currentState.role === 'farmer') {
+            const dashboardSections = document.querySelectorAll(`#farmerDashboard .dashboard-section`);
+            dashboardSections.forEach(s => {
+                if (s.id === `${section}-section`) {
+                    s.classList.remove('hidden');
+                } else {
+                    s.classList.add('hidden');
+                }
+            });
+            loadFarmerSection(section);
+        }
     }
     
     showToast('info', 'Navigation', `Switched to ${section.charAt(0).toUpperCase() + section.slice(1)} section`);
@@ -867,6 +878,35 @@ const appData = {
     setTimeout(() => {
       loadFarmerChart();
     }, 100);
+  }
+
+  function loadFarmerSection(section) {
+    console.log(`Loading farmer section: ${section}`);
+    // Add specific logic for each farmer section here if needed
+    switch (section) {
+      case 'home':
+        // Logic for home section
+        break;
+      case 'batches':
+        // Logic for batches section
+        break;
+      case 'transactions':
+        console.log('Transactions section loaded.');
+        // No dynamic loading needed for now as data is static in HTML
+        break;
+      case 'qr':
+        // Logic for QR codes section
+        break;
+      case 'analytics':
+        console.log('Analytics section loaded.');
+        // Charts are loaded by loadFarmerDashboard, no specific action needed here for static data
+        break;
+      case 'provenance':
+        // Logic for provenance section (settings)
+        break;
+      default:
+        console.warn(`Unknown farmer section: ${section}`);
+    }
   }
   
   async function loadOnChainCrops(filterByFarmer = false) {

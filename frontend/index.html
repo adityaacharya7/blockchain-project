@@ -261,65 +261,248 @@
                     </div>
                 </div>
 
-                <div class="stats-row">
-                    <div class="stat-card green-theme">
-                        <div class="stat-icon">🌿</div>
-                        <div class="stat-content">
-                            <h3>45</h3>
-                            <p>Your Active Crops</p>
-                            <span class="stat-change">+5 this month</span>
+                <div id="home-section" class="dashboard-section">
+                    <div class="stats-row">
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🌿</div>
+                            <div class="stat-content">
+                                <h3>45</h3>
+                                <p>Your Active Crops</p>
+                                <span class="stat-change">+5 this month</span>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">💸</div>
+                            <div class="stat-content">
+                                <h3>₹8,45,670</h3>
+                                <p>Money Earned So Far</p>
+                                <span class="stat-change">+23% vs last month</span>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <h3>12</h3>
+                                <p>Buyers Interested</p>
+                                <span class="stat-change">Active bidding</span>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🌟</div>
+                            <div class="stat-content">
+                                <h3>4.8</h3>
+                                <p>Farmer Reputation</p>
+                                <span class="stat-change">Excellent</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="stat-card green-theme">
-                        <div class="stat-icon">💸</div>
-                        <div class="stat-content">
-                            <h3>₹8,45,670</h3>
-                            <p>Money Earned So Far</p>
-                            <span class="stat-change">+23% vs last month</span>
+
+                    <div class="dashboard-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Monthly Earnings Trend</h3>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="farmerEarningsChart"></canvas>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card green-theme">
-                        <div class="stat-icon">📈</div>
-                        <div class="stat-content">
-                            <h3>12</h3>
-                            <p>Buyers Interested</p>
-                            <span class="stat-change">Active bidding</span>
-                        </div>
-                    </div>
-                    <div class="stat-card green-theme">
-                        <div class="stat-icon">🌟</div>
-                        <div class="stat-content">
-                            <h3>4.8</h3>
-                            <p>Farmer Reputation</p>
-                            <span class="stat-change">Excellent</span>
+                        
+                        <div class="recent-activity">
+                            <h3>Recent Activity</h3>
+                            <div class="activity-list" id="farmerActivity"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Monthly Earnings Trend</h3>
-                        </div>
-                        <div style="position: relative; height: 300px;">
-                            <canvas id="farmerEarningsChart"></canvas>
-                        </div>
+                <div id="batches-section" class="dashboard-section hidden">
+                    <div class="crops-section">
+                        <h3>My Crops</h3>
+                        <div class="crops-grid" id="farmerCrops"></div>
                     </div>
-                    
-                    <div class="recent-activity">
-                        <h3>Recent Activity</h3>
-                        <div class="activity-list" id="farmerActivity"></div>
+                    <div class="auctions-section">
+                        <h3>My Auctions</h3>
+                        <div class="auctions-grid" id="farmerAuctions"></div>
                     </div>
                 </div>
 
-                <div class="crops-section">
-                    <h3>My Crops</h3>
-                    <div class="crops-grid" id="farmerCrops"></div>
+                <div id="transactions-section" class="dashboard-section hidden">
+                    <h2>Your Transactions</h2>
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="farmerTransactions">
+                                <tr>
+                                    <td>0xabc...def1</td>
+                                    <td>2025-09-28</td>
+                                    <td>Sale (Organic Tomatoes)</td>
+                                    <td>₹15,000</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x123...4562</td>
+                                    <td>2025-09-27</td>
+                                    <td>Purchase (Fertilizer)</td>
+                                    <td>₹2,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x789...abc3</td>
+                                    <td>2025-09-26</td>
+                                    <td>Sale (Basmati Rice)</td>
+                                    <td>₹12,000</td>
+                                    <td><span class="status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0xdef...7894</td>
+                                    <td>2025-09-25</td>
+                                    <td>Sale (Premium Apples)</td>
+                                    <td>₹18,000</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x456...1235</td>
+                                    <td>2025-09-24</td>
+                                    <td>Purchase (Seeds)</td>
+                                    <td>₹3,000</td>
+                                    <td><span class="status-failed">Failed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0xfed...cba6</td>
+                                    <td>2025-09-23</td>
+                                    <td>Sale (Fresh Wheat)</td>
+                                    <td>₹9,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x987...6547</td>
+                                    <td>2025-09-22</td>
+                                    <td>Sale (Organic Tomatoes)</td>
+                                    <td>₹16,200</td>
+                                    <td><span class="status-pending">Pending</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x321...fed8</td>
+                                    <td>2025-09-21</td>
+                                    <td>Purchase (Pesticides)</td>
+                                    <td>₹1,800</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x654...3219</td>
+                                    <td>2025-09-20</td>
+                                    <td>Sale (Basmati Rice)</td>
+                                    <td>₹11,000</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x000...1110</td>
+                                    <td>2025-09-19</td>
+                                    <td>Sale (Premium Apples)</td>
+                                    <td>₹20,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="auctions-section">
-                    <h3>My Auctions</h3>
-                    <div class="auctions-grid" id="farmerAuctions"></div>
+                <div id="qr-section" class="dashboard-section hidden">
+                    <h2>Generate QR Code</h2>
+                    <div class="qr-generator">
+                        <div class="form-group">
+                            <label for="qrBatchId">Enter Batch ID to Generate QR Code</label>
+                            <input type="text" id="qrBatchId" class="form-control" placeholder="e.g., 1">
+                        </div>
+                        <button id="generateQrBtn" class="btn btn--primary">Generate</button>
+                        <div id="qrCodeContainer" class="qr-code-container"></div>
+                    </div>
+                </div>
+
+                <div id="analytics-section" class="dashboard-section hidden">
+                    <h2>Farm Analytics</h2>
+                    <div class="analytics-grid">
+                        
+                    </div>
+                    <div class="analytics-data-grid" id="farmerAnalyticsData">
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🌱</div>
+                            <div class="stat-content">
+                                <h3>95%</h3>
+                                <p>Germination Rate</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">💧</div>
+                            <div class="stat-content">
+                                <h3>1200L</h3>
+                                <p>Water Usage (Daily)</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">☀️</div>
+                            <div class="stat-content">
+                                <h3>8 hrs</h3>
+                                <p>Sunlight Exposure</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🌡️</div>
+                            <div class="stat-content">
+                                <h3>28°C</h3>
+                                <p>Avg. Temperature</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🐛</div>
+                            <div class="stat-content">
+                                <h3>Low</h3>
+                                <p>Pest Infestation</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <h3>+15%</h3>
+                                <p>Yield Forecast</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3>₹50k</h3>
+                                <p>Expected Revenue</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-content">
+                                <h3>3</h3>
+                                <p>Batches in Auction</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">🚚</div>
+                            <div class="stat-content">
+                                <h3>2</h3>
+                                <p>Deliveries Scheduled</p>
+                            </div>
+                        </div>
+                        <div class="stat-card green-theme">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-content">
+                                <h3>4.9</h3>
+                                <p>Customer Rating</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

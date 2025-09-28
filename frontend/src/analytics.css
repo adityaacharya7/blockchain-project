@@ -1,0 +1,183 @@
+.analytics-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    background: rgba(255, 107, 107, 0.1);
+    padding: 1rem;
+    border-radius: 50%;
+}
+
+.stat-content h3 {
+    font-size: 1.5rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.stat-content p {
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+}
+
+.stat-change {
+    font-size: 0.875rem;
+    color: #4ECDC4;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.chart-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.chart-header {
+    margin-bottom: 1rem;
+}
+
+.chart-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.analytics-insights {
+    margin-top: 2rem;
+}
+
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.insight-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: transform 0.3s ease;
+}
+
+.insight-card:hover {
+    transform: translateY(-5px);
+}
+
+.insight-card i {
+    font-size: 1.5rem;
+    color: #FF6B6B;
+    margin-bottom: 1rem;
+}
+
+.insight-card h4 {
+    margin: 0.5rem 0;
+    color: var(--text-primary);
+}
+
+.insight-card p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Transaction Filters */
+.transaction-filters {
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.transaction-filters button {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+}
+
+.transaction-filters button.active {
+    background: #FF6B6B;
+    color: white;
+}
+
+/* Recent Scans */
+.scan-history {
+    margin-top: 2rem;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.recent-scans-list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0 0;
+}
+
+.recent-scans-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.recent-scans-list li:last-child {
+    border-bottom: none;
+}
+
+.scan-time {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.scan-batch {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Status Indicators */
+.status-completed {
+    background: rgba(78, 205, 196, 0.1);
+    color: #4ECDC4;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.status-pending {
+    background: rgba(255, 193, 7, 0.1);
+    color: #FFC107;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.status-failed {
+    background: rgba(255, 107, 107, 0.1);
+    color: #FF6B6B;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}

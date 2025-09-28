@@ -6,6 +6,9 @@
     <title>Farm to Fork: Transparent Agriculture Powered by Blockchain</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="dark-theme.css">
+    <link rel="stylesheet" href="src/analytics.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
@@ -820,19 +823,59 @@
                                 <p><strong>Quantity:</strong> 500 kg</p>
                                 <p><strong>Received:</strong> Sep 25, 2025</p>
                                 <p><strong>Shelf Life:</strong> 7 days remaining</p>
-                                <p><strong>Quality Check:</strong> Passed</p>
+                                <p><strong>Quality Check:</strong> <span class="status-completed">Passed</span></p>
+                                <p><strong>Source:</strong> Green Valley Farms</p>
                             </div>
                             <div class="batch-actions">
                                 <button class="btn btn--sm btn--outline">View Details</button>
                                 <button class="btn btn--sm btn--primary">Update Status</button>
                             </div>
                         </div>
-                        <!-- More batch cards -->
+                        <div class="batch-card">
+                            <div class="batch-header">
+                                <h4>Premium Apples</h4>
+                                <span class="batch-id">#BT2508</span>
+                            </div>
+                            <div class="batch-details">
+                                <p><strong>Quantity:</strong> 300 kg</p>
+                                <p><strong>Received:</strong> Sep 24, 2025</p>
+                                <p><strong>Shelf Life:</strong> 12 days remaining</p>
+                                <p><strong>Quality Check:</strong> <span class="status-completed">Passed</span></p>
+                                <p><strong>Source:</strong> Sunset Heritage Orchards</p>
+                            </div>
+                            <div class="batch-actions">
+                                <button class="btn btn--sm btn--outline">View Details</button>
+                                <button class="btn btn--sm btn--primary">Update Status</button>
+                            </div>
+                        </div>
+                        <div class="batch-card">
+                            <div class="batch-header">
+                                <h4>Basmati Rice</h4>
+                                <span class="batch-id">#BT2507</span>
+                            </div>
+                            <div class="batch-details">
+                                <p><strong>Quantity:</strong> 1000 kg</p>
+                                <p><strong>Received:</strong> Sep 23, 2025</p>
+                                <p><strong>Shelf Life:</strong> 60 days remaining</p>
+                                <p><strong>Quality Check:</strong> <span class="status-completed">Passed</span></p>
+                                <p><strong>Source:</strong> Green Valley Farms</p>
+                            </div>
+                            <div class="batch-actions">
+                                <button class="btn btn--sm btn--outline">View Details</button>
+                                <button class="btn btn--sm btn--primary">Update Status</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div id="retailer-transactions-section" class="dashboard-section hidden">
                     <h2>Purchase History</h2>
+                    <div class="transaction-filters">
+                        <button class="btn btn--outline active">All</button>
+                        <button class="btn btn--outline">Completed</button>
+                        <button class="btn btn--outline">Pending</button>
+                        <button class="btn btn--outline">Failed</button>
+                    </div>
                     <div class="table-container">
                         <table class="transaction-table">
                             <thead>
@@ -840,6 +883,7 @@
                                     <th>Order ID</th>
                                     <th>Date</th>
                                     <th>Product</th>
+                                    <th>Supplier</th>
                                     <th>Quantity</th>
                                     <th>Amount</th>
                                     <th>Status</th>
@@ -850,11 +894,38 @@
                                     <td>#ORD2509</td>
                                     <td>Sep 25, 2025</td>
                                     <td>Organic Tomatoes</td>
+                                    <td>Green Valley Farms</td>
                                     <td>500 kg</td>
                                     <td>₹22,500</td>
                                     <td><span class="status-completed">Completed</span></td>
                                 </tr>
-                                <!-- More transaction rows -->
+                                <tr>
+                                    <td>#ORD2508</td>
+                                    <td>Sep 24, 2025</td>
+                                    <td>Premium Apples</td>
+                                    <td>Sunset Heritage Orchards</td>
+                                    <td>300 kg</td>
+                                    <td>₹45,000</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>#ORD2507</td>
+                                    <td>Sep 23, 2025</td>
+                                    <td>Basmati Rice</td>
+                                    <td>Green Valley Farms</td>
+                                    <td>1000 kg</td>
+                                    <td>₹85,000</td>
+                                    <td><span class="status-pending">Processing</span></td>
+                                </tr>
+                                <tr>
+                                    <td>#ORD2506</td>
+                                    <td>Sep 22, 2025</td>
+                                    <td>Fresh Onions</td>
+                                    <td>AgriConnect Hub</td>
+                                    <td>400 kg</td>
+                                    <td>₹12,000</td>
+                                    <td><span class="status-failed">Failed</span></td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -871,16 +942,65 @@
                                 <li>Hold steady until the code is scanned</li>
                                 <li>View product verification details</li>
                             </ol>
+                            <div class="scan-history">
+                                <h3>Recent Scans</h3>
+                                <ul class="recent-scans-list">
+                                    <li>
+                                        <span class="scan-time">2 mins ago</span>
+                                        <span class="scan-batch">#BT2509 - Organic Tomatoes</span>
+                                        <span class="status-completed">Verified</span>
+                                    </li>
+                                    <li>
+                                        <span class="scan-time">15 mins ago</span>
+                                        <span class="scan-batch">#BT2508 - Premium Apples</span>
+                                        <span class="status-completed">Verified</span>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="retailer-analytics-section" class="dashboard-section hidden">
                     <h2>Store Analytics</h2>
+                    <div class="analytics-summary">
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-content">
+                                <h3>₹1,65,500</h3>
+                                <p>Total Purchase Value</p>
+                                <span class="stat-change">+12% vs last month</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">⭐</div>
+                            <div class="stat-content">
+                                <h3>98.2%</h3>
+                                <p>Product Quality Score</p>
+                                <span class="stat-change">+2.1% improvement</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">⚡</div>
+                            <div class="stat-content">
+                                <h3>24 Hours</h3>
+                                <p>Avg. Verification Time</p>
+                                <span class="stat-change">-10% faster</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">📊</div>
+                            <div class="stat-content">
+                                <h3>92.5%</h3>
+                                <p>Blockchain Verification Rate</p>
+                                <span class="stat-change">High trust score</span>
+                            </div>
+                        </div>
+                    </div>
                     <div class="analytics-grid">
                         <div class="chart-container">
                             <div class="chart-header">
-                                <h3>Sales by Category</h3>
+                                <h3>Purchase Volume by Category</h3>
                             </div>
                             <div style="position: relative; height: 300px;">
                                 <canvas id="retailerSalesChart"></canvas>
@@ -888,10 +1008,30 @@
                         </div>
                         <div class="chart-container">
                             <div class="chart-header">
-                                <h3>Quality Metrics</h3>
+                                <h3>Quality Metrics Trend</h3>
                             </div>
                             <div style="position: relative; height: 300px;">
                                 <canvas id="retailerQualityChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="analytics-insights">
+                        <h3>Key Insights</h3>
+                        <div class="insights-grid">
+                            <div class="insight-card">
+                                <i class="fas fa-arrow-trend-up"></i>
+                                <h4>Trending Products</h4>
+                                <p>Organic vegetables showing 25% growth in demand</p>
+                            </div>
+                            <div class="insight-card">
+                                <i class="fas fa-clock"></i>
+                                <h4>Peak Hours</h4>
+                                <p>Highest verification activity between 9 AM - 11 AM</p>
+                            </div>
+                            <div class="insight-card">
+                                <i class="fas fa-chart-pie"></i>
+                                <h4>Category Mix</h4>
+                                <p>Fresh produce accounts for 60% of verifications</p>
                             </div>
                         </div>
                     </div>

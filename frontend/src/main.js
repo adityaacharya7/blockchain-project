@@ -791,6 +791,16 @@ const appData = {
                 }
             });
             loadFarmerSection(section);
+        } else if (currentState.role === 'distributor') {
+            const dashboardSections = document.querySelectorAll(`#distributorDashboard .dashboard-section`);
+            dashboardSections.forEach(s => {
+                if (s.id === `distributor-${section}-section`) {
+                    s.classList.remove('hidden');
+                } else {
+                    s.classList.add('hidden');
+                }
+            });
+            // Future: loadDistributorSection(section);
         }
     }
     

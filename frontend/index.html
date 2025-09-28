@@ -508,72 +508,234 @@
 
             <!-- Distributor Dashboard -->
             <div id="distributorDashboard" class="dashboard distributor-theme hidden">
-                <div class="dashboard-header">
-                    <div class="header-left">
-                        <h1><i class="fas fa-truck"></i> Distributor Dashboard</h1>
-                        <p>AgriConnect Distribution Hub</p>
+                <div id="distributor-home-section" class="dashboard-section">
+                    <div class="dashboard-header">
+                        <div class="header-left">
+                            <h1><i class="fas fa-truck"></i> Distributor Dashboard</h1>
+                            <p>AgriConnect Distribution Hub</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">🚚</div>
+                            <div class="stat-content">
+                                <h3>15</h3>
+                                <p>Active Bids</p>
+                                <span class="stat-change">Competitive bidding</span>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-content">
+                                <h3>89</h3>
+                                <p>Won Auctions</p>
+                                <span class="stat-change">94.2% success rate</span>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">📦</div>
+                            <div class="stat-content">
+                                <h3>23</h3>
+                                <p>Deliveries Pending</p>
+                                <span class="stat-change">On schedule</span>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">⚠️</div>
+                            <div class="stat-content">
+                                <h3>2</h3>
+                                <p>Penalties</p>
+                                <span class="stat-change">Low penalty rate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Bidding Success Rate</h3>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="distributorSuccessChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="available-crops-preview">
+                            <h3>Available Crops</h3>
+                            <div class="crops-preview" id="distributorCropsPreview"></div>
+                        </div>
+                    </div>
+
+                    <div class="requests-section">
+                        <h3>Incoming Purchase Requests</h3>
+                        <div class="requests-grid" id="purchaseRequests">
+                            <!-- Requests will be loaded here by JavaScript -->
+                        </div>
                     </div>
                 </div>
 
-                <div class="stats-row">
-                    <div class="stat-card blue-theme">
-                        <div class="stat-icon">🚚</div>
-                        <div class="stat-content">
-                            <h3>15</h3>
-                            <p>Active Bids</p>
-                            <span class="stat-change">Competitive bidding</span>
+                <div id="distributor-batches-section" class="dashboard-section hidden">
+                    <h2>Your Acquired Batches & Bids</h2>
+                    <div class="crops-grid" id="distributorBatches">
+                        <div class="crop-card">
+                            <div class="crop-card-header">
+                                <h4>Organic Tomatoes</h4>
+                                <div class="crop-variety">From: Green Valley Farms</div>
+                            </div>
+                            <div class="crop-card-body">
+                                <div class="crop-details">
+                                    <div class="crop-detail"><strong>Quantity:</strong> <span>800 kg</span></div>
+                                    <div class="crop-detail"><strong>Won At:</strong> <span>₹42/kg</span></div>
+                                    <div class="crop-detail"><strong>Status:</strong> <span class="status-transit">In Transit</span></div>
+                                </div>
+                            </div>
+                            <div class="crop-card-footer">
+                                <button class="btn btn--sm btn--outline">Track Shipment</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card blue-theme">
-                        <div class="stat-icon">🏆</div>
-                        <div class="stat-content">
-                            <h3>89</h3>
-                            <p>Won Auctions</p>
-                            <span class="stat-change">94.2% success rate</span>
+                        <div class="crop-card">
+                            <div class="crop-card-header">
+                                <h4>Premium Apples</h4>
+                                <div class="crop-variety">From: Sunset Orchards</div>
+                            </div>
+                            <div class="crop-card-body">
+                                <div class="crop-details">
+                                    <div class="crop-detail"><strong>Quantity:</strong> <span>500 kg</span></div>
+                                    <div class="crop-detail"><strong>Won At:</strong> <span>₹145/kg</span></div>
+                                    <div class="crop-detail"><strong>Status:</strong> <span class="status-completed">Delivered</span></div>
+                                </div>
+                            </div>
+                            <div class="crop-card-footer">
+                                <button class="btn btn--sm btn--outline">View Invoice</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="stat-card blue-theme">
-                        <div class="stat-icon">📦</div>
-                        <div class="stat-content">
-                            <h3>23</h3>
-                            <p>Deliveries Pending</p>
-                            <span class="stat-change">On schedule</span>
-                        </div>
-                    </div>
-                    <div class="stat-card blue-theme">
-                        <div class="stat-icon">⚠️</div>
-                        <div class="stat-content">
-                            <h3>2</h3>
-                            <p>Penalties</p>
-                            <span class="stat-change">Low penalty rate</span>
+                        <div class="crop-card">
+                            <div class="crop-card-header">
+                                <h4>Basmati Rice</h4>
+                                <div class="crop-variety">From: Green Valley Farms</div>
+                            </div>
+                            <div class="crop-card-body">
+                                <div class="crop-details">
+                                    <div class="crop-detail"><strong>Quantity:</strong> <span>2000 kg</span></div>
+                                    <div class="crop-detail"><strong>My Bid:</strong> <span>₹83/kg</span></div>
+                                    <div class="crop-detail"><strong>Status:</strong> <span class="status-pending">Bidding Active</span></div>
+                                </div>
+                            </div>
+                            <div class="crop-card-footer">
+                                <button class="btn btn--sm btn--primary">Increase Bid</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="chart-container">
+                <div id="distributor-transactions-section" class="dashboard-section hidden">
+                    <h2>Your Transactions</h2>
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Transaction ID</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="distributorTransactions">
+                                <tr>
+                                    <td>0x1a2b...c3d4</td>
+                                    <td>2025-09-27</td>
+                                    <td>Purchase</td>
+                                    <td>Won auction for Organic Tomatoes</td>
+                                    <td>₹33,600</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x5e6f...g7h8</td>
+                                    <td>2025-09-26</td>
+                                    <td>Logistics</td>
+                                    <td>Shipment for Premium Apples</td>
+                                    <td>₹4,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x9i0j...k1l2</td>
+                                    <td>2025-09-25</td>
+                                    <td>Sale</td>
+                                    <td>Sold Premium Apples to FreshMart</td>
+                                    <td>₹85,000</td>
+                                    <td><span class="status-pending">Pending Payment</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x3m4n...o5p6</td>
+                                    <td>2025-09-24</td>
+                                    <td>Purchase</td>
+                                    <td>Won auction for Fresh Wheat</td>
+                                    <td>₹28,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <tr>
+                                    <td>0x7q8r...s9t0</td>
+                                    <td>2025-09-23</td>
+                                    <td>Penalty</td>
+                                    <td>Late delivery fee for Batch #112</td>
+                                    <td>₹1,200</td>
+                                    <td><span class="status-failed">Paid</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="distributor-qr-section" class="dashboard-section hidden">
+                    <h2>Scan & Verify Batches</h2>
+                    <p>Use this section to scan QR codes on incoming batches to verify their authenticity and details on the blockchain.</p>
+                    <div id="distributor-qr-reader" style="width: 500px; margin-top: 20px;"></div>
+                </div>
+
+                <div id="distributor-analytics-section" class="dashboard-section hidden">
+                    <h2>Your Performance Analytics</h2>
+                    <div class="stats-row">
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">📈</div>
+                            <div class="stat-content">
+                                <h3>₹1,45,000</h3>
+                                <p>Total Volume (This Month)</p>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">⏱️</div>
+                            <div class="stat-content">
+                                <h3>48 Hours</h3>
+                                <p>Avg. Delivery Time</p>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">🍅</div>
+                            <div class="stat-content">
+                                <h3>Tomatoes</h3>
+                                <p>Top Traded Crop</p>
+                            </div>
+                        </div>
+                        <div class="stat-card blue-theme">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3>18.5%</h3>
+                                <p>Average Profit Margin</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="margin-top: 40px;">
                         <div class="chart-header">
-                            <h3>Bidding Success Rate</h3>
+                            <h3>Purchase Volume by Crop Type (kg)</h3>
                         </div>
                         <div style="position: relative; height: 300px;">
-                            <canvas id="distributorSuccessChart"></canvas>
+                            <canvas id="distributorPurchaseChart"></canvas>
                         </div>
                     </div>
-                    
-                    <div class="available-crops-preview">
-                        <h3>Available Crops</h3>
-                        <div class="crops-preview" id="distributorCropsPreview"></div>
-                    </div>
                 </div>
-
-                <div class="requests-section">
-                    <h3>Incoming Purchase Requests</h3>
-                    <div class="requests-grid" id="purchaseRequests">
-                        <!-- Requests will be loaded here by JavaScript -->
-                    </div>
-                </div>
-
-                
             </div>
 
             <!-- Retailer Dashboard -->

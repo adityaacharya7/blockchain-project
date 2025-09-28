@@ -2401,3 +2401,10 @@ blockquote footer {
     font-size: 16px;
     color: var(--color-text-secondary);
 }
+
+.dashboard-section h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    margin-bottom: 25px;
+}

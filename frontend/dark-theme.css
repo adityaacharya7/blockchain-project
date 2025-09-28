@@ -1,0 +1,114 @@
+/* Dark theme styles for cards and containers */
+.card, .stat-card, .crop-card, .batch-card, .chart-container {
+    background: #1a1c1e;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.chart-container {
+    background: #1a1c1e;
+}
+
+.card h3, .stat-card h3, .crop-card h3, .batch-card h3, .chart-container h3 {
+    color: #ffffff;
+}
+
+.stat-card .stat-content p, .stat-card .stat-change {
+    color: rgba(255,255,255,0.7);
+}
+
+.chart-container .chart-header {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* Dashboard cards specific styles */
+.dashboard .stat-card {
+    background: #1a1c1e;
+}
+
+.dashboard .stat-card .stat-icon {
+    background: rgba(255,255,255,0.1);
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.dashboard .batch-card {
+    background: #1a1c1e;
+}
+
+.dashboard .crop-card {
+    background: #1a1c1e;
+}
+
+/* Table styles for dark theme */
+.table-container {
+    background: #1a1c1e;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.transaction-table {
+    color: #ffffff;
+}
+
+.transaction-table th {
+    background: rgba(255,255,255,0.1);
+    padding: 1rem;
+}
+
+.transaction-table td {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1rem;
+}
+
+/* Status indicators */
+.status-completed {
+    color: #4CAF50;
+}
+
+.status-pending {
+    color: #FFC107;
+}
+
+.status-failed {
+    color: #F44336;
+}
+
+/* Chart modifications for dark theme */
+canvas {
+    background: #1a1c1e;
+}
+
+/* Alert and notification sections */
+.alerts-list {
+    background: #1a1c1e;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.activity-item {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 1rem 0;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+/* QR Scanner section */
+.qr-scanner-container {
+    background: #1a1c1e;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+/* Analytics section */
+.analytics-grid .chart-container {
+    background: #1a1c1e;
+}

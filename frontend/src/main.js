@@ -801,6 +801,16 @@ const appData = {
                 }
             });
             // Future: loadDistributorSection(section);
+        } else if (currentState.role === 'retailer') {
+            const dashboardSections = document.querySelectorAll(`#retailerDashboard .dashboard-section`);
+            dashboardSections.forEach(s => {
+                if (s.id === `retailer-${section}-section`) {
+                    s.classList.remove('hidden');
+                } else {
+                    s.classList.add('hidden');
+                }
+            });
+            loadRetailerSection(section);
         }
     }
     

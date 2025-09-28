@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Farm to Fork: Transparent Agriculture Powered by Blockchain</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="dark-theme.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.js"></script>
@@ -740,71 +741,159 @@
 
             <!-- Retailer Dashboard -->
             <div id="retailerDashboard" class="dashboard retailer-theme hidden">
-                <div class="dashboard-header">
-                    <div class="header-left">
-                        <h1><i class="fas fa-store"></i> Retailer Dashboard</h1>
-                        <p>FreshMart Supermarket Chain</p>
+                <div id="retailer-home-section" class="dashboard-section">
+                    <div class="dashboard-header">
+                        <div class="header-left">
+                            <h1><i class="fas fa-store"></i> Retailer Dashboard</h1>
+                            <p>FreshMart Supermarket Chain</p>
+                        </div>
                     </div>
-                    <div class="header-actions">
+
+                    <div class="stats-row">
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-content">
+                                <h3>156</h3>
+                                <p>Batches Verified</p>
+                                <span class="stat-change">All authentic</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">⏰</div>
+                            <div class="stat-content">
+                                <h3>3</h3>
+                                <p>Shelf Life Alerts</p>
+                                <span class="stat-change">Action required</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">🎯</div>
+                            <div class="stat-content">
+                                <h3>96.8%</h3>
+                                <p>Quality Score</p>
+                                <span class="stat-change">Excellent</span>
+                            </div>
+                        </div>
+                        <div class="stat-card orange-theme">
+                            <div class="stat-icon">💬</div>
+                            <div class="stat-content">
+                                <h3>4.7</h3>
+                                <p>Customer Rating</p>
+                                <span class="stat-change">High satisfaction</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Weekly Verification Trends</h3>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="retailerVerificationChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="inventory-alerts">
+                            <h3>Inventory Alerts</h3>
+                            <div class="alerts-list" id="retailerAlerts"></div>
+                        </div>
+                    </div>
+
+                    <div class="marketplace-section">
+                        <h3>Available from Distributors</h3>
+                        <div class="batches-grid" id="retailerMarketplace">
+                            <!-- Batches will be loaded here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="retailer-batches-section" class="dashboard-section hidden">
+                    <h2>Product Batches</h2>
+                    <div class="batches-grid">
+                        <div class="batch-card">
+                            <div class="batch-header">
+                                <h4>Organic Tomatoes</h4>
+                                <span class="batch-id">#BT2509</span>
+                            </div>
+                            <div class="batch-details">
+                                <p><strong>Quantity:</strong> 500 kg</p>
+                                <p><strong>Received:</strong> Sep 25, 2025</p>
+                                <p><strong>Shelf Life:</strong> 7 days remaining</p>
+                                <p><strong>Quality Check:</strong> Passed</p>
+                            </div>
+                            <div class="batch-actions">
+                                <button class="btn btn--sm btn--outline">View Details</button>
+                                <button class="btn btn--sm btn--primary">Update Status</button>
+                            </div>
+                        </div>
+                        <!-- More batch cards -->
+                    </div>
+                </div>
+
+                <div id="retailer-transactions-section" class="dashboard-section hidden">
+                    <h2>Purchase History</h2>
+                    <div class="table-container">
+                        <table class="transaction-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>#ORD2509</td>
+                                    <td>Sep 25, 2025</td>
+                                    <td>Organic Tomatoes</td>
+                                    <td>500 kg</td>
+                                    <td>₹22,500</td>
+                                    <td><span class="status-completed">Completed</span></td>
+                                </tr>
+                                <!-- More transaction rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="retailer-qr-section" class="dashboard-section hidden">
+                    <h2>Scan Product QR</h2>
+                    <div class="qr-scanner-container">
                         <div id="qr-reader" style="width: 500px"></div>
-                    </div>
-                </div>
-
-                <div class="stats-row">
-                    <div class="stat-card orange-theme">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-content">
-                            <h3>156</h3>
-                            <p>Batches Verified</p>
-                            <span class="stat-change">All authentic</span>
-                        </div>
-                    </div>
-                    <div class="stat-card orange-theme">
-                        <div class="stat-icon">⏰</div>
-                        <div class="stat-content">
-                            <h3>3</h3>
-                            <p>Shelf Life Alerts</p>
-                            <span class="stat-change">Action required</span>
-                        </div>
-                    </div>
-                    <div class="stat-card orange-theme">
-                        <div class="stat-icon">🎯</div>
-                        <div class="stat-content">
-                            <h3>96.8%</h3>
-                            <p>Quality Score</p>
-                            <span class="stat-change">Excellent</span>
-                        </div>
-                    </div>
-                    <div class="stat-card orange-theme">
-                        <div class="stat-icon">💬</div>
-                        <div class="stat-content">
-                            <h3>4.7</h3>
-                            <p>Customer Rating</p>
-                            <span class="stat-change">High satisfaction</span>
+                        <div class="scan-instructions">
+                            <h3>Instructions</h3>
+                            <ol>
+                                <li>Position the QR code within the frame</li>
+                                <li>Hold steady until the code is scanned</li>
+                                <li>View product verification details</li>
+                            </ol>
                         </div>
                     </div>
                 </div>
 
-                <div class="dashboard-grid">
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Weekly Verification Trends</h3>
+                <div id="retailer-analytics-section" class="dashboard-section hidden">
+                    <h2>Store Analytics</h2>
+                    <div class="analytics-grid">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Sales by Category</h3>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="retailerSalesChart"></canvas>
+                            </div>
                         </div>
-                        <div style="position: relative; height: 300px;">
-                            <canvas id="retailerVerificationChart"></canvas>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Quality Metrics</h3>
+                            </div>
+                            <div style="position: relative; height: 300px;">
+                                <canvas id="retailerQualityChart"></canvas>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="inventory-alerts">
-                        <h3>Inventory Alerts</h3>
-                        <div class="alerts-list" id="retailerAlerts"></div>
-                    </div>
-                </div>
-
-                <div class="marketplace-section">
-                    <h3>Available from Distributors</h3>
-                    <div class="batches-grid" id="retailerMarketplace">
-                        <!-- Batches will be loaded here by JavaScript -->
                     </div>
                 </div>
             </div>

@@ -2408,3 +2408,69 @@ blockquote footer {
     color: var(--color-text-dark);
     margin-bottom: 25px;
 }
+
+/* Retailer Dashboard Specific Styles */
+.retailer-theme .dashboard-section {
+    margin-bottom: 2rem;
+}
+
+.retailer-theme .batch-card {
+    background: #1a1c1e;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.retailer-theme .batch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.retailer-theme .batch-details {
+    margin-bottom: 1rem;
+}
+
+.retailer-theme .batch-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.retailer-theme .qr-scanner-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+}
+
+.retailer-theme .scan-instructions {
+    flex: 1;
+    padding: 1.5rem;
+    background: #1a1c1e;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.retailer-theme .scan-instructions h3 {
+    margin-bottom: 1rem;
+}
+
+.retailer-theme .scan-instructions ol {
+    padding-left: 1.5rem;
+}
+
+.retailer-theme .scan-instructions li {
+    margin-bottom: 0.5rem;
+}
+
+.retailer-theme .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}

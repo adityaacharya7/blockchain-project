@@ -895,7 +895,41 @@ const appData = {
     showToast('info', 'Navigation', `Switched to ${section.charAt(0).toUpperCase() + section.slice(1)} section`);
   }
   
-  function showDashboard(role) {
+  // Load retailer section data and initialize components
+function loadRetailerSection(section) {
+    console.log('Loading retailer section:', section);
+    
+    switch(section) {
+        case 'analytics':
+            initializeRetailerCharts();
+            break;
+        case 'batches':
+            // Future: Load batch data from blockchain
+            break;
+        case 'transactions':
+            // Set up transaction filter handlers
+            const filterButtons = document.querySelectorAll('.transaction-filters button');
+            filterButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    // Future: Filter transactions based on status
+                });
+            });
+            break;
+        case 'qr':
+            // Initialize QR scanner
+            const qrReader = document.getElementById('qr-reader');
+            if (qrReader) {
+                // Future: Initialize QR scanner library
+            }
+            break;
+        default:
+            console.log('No specific initialization needed for:', section);
+    }
+}
+
+function showDashboard(role) {
     console.log('Showing dashboard for role:', role);
     
     // Hide all dashboards

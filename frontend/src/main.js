@@ -169,7 +169,7 @@ const appData = {
         txHash: "0x1a2b3c4d5e6f7890abcdef123456",
         blockNumber: 18567891,
         timestamp: "2024-09-15T08:30:00Z",
-        gasUsed: "0.0045 ETH",
+        gasUsed: "₹0.0045",
         status: "Confirmed",
         icon: "📦"
       },
@@ -181,7 +181,7 @@ const appData = {
         txHash: "0x9f8e7d6c5b4a39281fed567890",
         blockNumber: 18567892,
         timestamp: "2024-09-16T10:30:00Z",
-        gasUsed: "0.0032 ETH", 
+        gasUsed: "₹0.0032", 
         status: "Confirmed",
         icon: "🚚"
       },
@@ -193,7 +193,7 @@ const appData = {
         txHash: "0x7c8b9a0d1e2f3456789abcdef0", 
         blockNumber: 18567893,
         timestamp: "2024-09-17T14:45:00Z",
-        gasUsed: "0.0038 ETH",
+        gasUsed: "₹0.0038",
         status: "Confirmed", 
         icon: "✅"
       }
@@ -228,25 +228,25 @@ const appData = {
       BatchRegistry: {
         address: "0x742d35cc6732c0532925a3b8d4b5c87d9ed2bcaa",
         network: "Polygon Mumbai Testnet",
-        deployCost: "0.0234 ETH",
+        deployCost: "₹0.0234",
         interactions: 1247
       },
       Auction: {
         address: "0x8ba1f109551bd432803012645hac136c34b5739c", 
         network: "Polygon Mumbai Testnet",
-        deployCost: "0.0156 ETH",
+        deployCost: "₹0.0156",
         interactions: 2156
       },
       Escrow: {
         address: "0x2f09a57f6e6b7c38d1c7f8a9b5c4d3e2f1908576",
         network: "Polygon Mumbai Testnet",
-        deployCost: "0.0198 ETH", 
+        deployCost: "₹0.0198", 
         interactions: 891
       },
       Insurance: {
         address: "0x4e7d8c9b0a1f2e3d4c5b6a7e8f9d0c1b2a3f4e5d",
         network: "Polygon Mumbai Testnet",
-        deployCost: "0.0167 ETH",
+        deployCost: "₹0.0167",
         interactions: 234
       }
     }
@@ -887,9 +887,9 @@ const appData = {
         console.log(`Batch count: ${batchCount}`);
 
         const crops = [];
-        // Use the logged-in user's wallet address for filtering
+        // Use the logged-in user's account for filtering
         const userWalletAddress = currentState.user ? currentState.user.wallet_address : null;
-        console.log(`User wallet address for filtering: ${userWalletAddress}`);
+        console.log(`User account for filtering: ${userWalletAddress}`);
 
         for (let i = 1; i <= batchCount; i++) {
             try {
@@ -1458,7 +1458,7 @@ const appData = {
         <div class="event-content">
           <div class="event-type">${event.type}</div>
           <div class="event-details">
-            Block: ${event.blockNumber} | Gas: ${event.gasUsed}
+            Block: ${event.blockNumber}
           </div>
           <div class="event-time">${formatDate(event.timestamp)}</div>
         </div>
@@ -1580,7 +1580,7 @@ const appData = {
             <div class="auction-info-grid">
               <div class="auction-info-item">
                 <strong>Highest Bid:</strong>
-                <span>${ethers.formatEther(auction.highestBid)} ETH</span>
+                <span>₹${ethers.formatEther(auction.highestBid)}</span>
               </div>
               <div class="auction-info-item">
                 <strong>Highest Bidder:</strong>
@@ -1647,7 +1647,7 @@ const appData = {
                                 <h4>Batch ID: ${auction.batchId.toString()}</h4>
                             </div>
                             <div class="auction-card-body">
-                                <p><strong>Highest Bid:</strong> ${ethers.formatEther(auction.highestBid)} ETH</p>
+                                <p><strong>Highest Bid:</strong> ₹${ethers.formatEther(auction.highestBid)}</p>
                                 <p><strong>Highest Bidder:</strong> ${auction.highestBidder}</p>
                                 <p><strong>End Time:</strong> ${new Date(Number(auction.endTime) * 1000).toLocaleString()}</p>
                             </div>
@@ -1845,7 +1845,7 @@ const appData = {
         document.getElementById('bidForm').reset();
         loadFarmerAuctions(); // Refresh the auction list
         
-        showToast('success', 'Bid Placed', `Your bid of ${bidAmount} ETH has been placed successfully!`);
+        showToast('success', 'Bid Placed', `Your bid of ₹${bidAmount} has been placed successfully!`);
 
     } catch (error) {
         console.error('Error placing bid:', error);
@@ -2355,7 +2355,7 @@ const appData = {
           const batchDetailsEl = document.getElementById('batchDetails');
           if(batchDetailsEl) batchDetailsEl.textContent = `Transaction sent: ${tx.hash}...\nWaiting for confirmation...`;
           await tx.wait();
-          if(batchDetailsEl) batchDetailsEl.textContent = `Batch registered successfully!\nTransaction hash: ${tx.hash}`;
+          if(batchDetailsEl) batchDetailsEl.textContent = `Batch registered successfully!\nTransaction ID: ${tx.hash}`;
           document.getElementById('ipfsHash').value = ''; // Clear input
       } catch (error) {
           console.error('Error registering batch:', error);
@@ -2414,7 +2414,7 @@ const appData = {
       }
   
       if (!ethers.isAddress(toAddress)) {
-          alert('Invalid Ethereum address.');
+          alert('Invalid account address.');
           return;
       }
   

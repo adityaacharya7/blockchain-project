@@ -14,6 +14,12 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html')
       }
-    }
-  }
+    },
+    // Ensure proper SPA fallback
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: true
+  },
+  // Add base URL configuration
+  base: '/'
 })

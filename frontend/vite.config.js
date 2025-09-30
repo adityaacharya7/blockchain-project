@@ -1,25 +1,26 @@
 import { defineConfig } from 'vite'
-import { resolve } from 'path'
 
 export default defineConfig({
   server: {
-    allowedHosts: [
-      'e9b5927477b8.ngrok-free.app'
-    ]
+    port: 3000
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    rollupOptions: {
-      input: {
-        main: resolve(__dirname, 'index.html')
-      }
-    },
     // Ensure proper SPA fallback
     target: 'esnext',
-    minify: 'terser',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['chart.js', 'ethers']
+        }
+      }
+    }
   },
   // Add base URL configuration
-  base: '/'
+  base: '/',
+  optimizeDeps: {
+    include: ['chart.js', 'ethers']
+  }
 })

@@ -1,4 +1,9 @@
 {
+  "version": 2,
+  "buildCommand": "cd frontend && npm install --force && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install --force",
+  "framework": "vite",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -9,8 +14,15 @@
       "destination": "/index.html"
     }
   ],
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/dist",
-  "framework": "vite",
-  "installCommand": "cd frontend && npm install"
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
 }
